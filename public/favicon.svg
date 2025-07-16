@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="128" height="128">
+  <!-- Air5Star Logo - A5S with blue color scheme -->
+  <rect width="100" height="100" rx="15" fill="#f0f8ff"/>
+  <g fill="#0066cc">
+    <!-- A -->
+    <path d="M20 70 L30 30 L40 30 L50 70 L42 70 L40 60 L30 60 L28 70 Z M31 53 L39 53 L35 38 Z" />
+    <!-- 5 -->
+    <path d="M55 30 L75 30 L75 37 L62 37 L62 45 L75 45 C75 45 75 70 55 70 L55 63 C65 63 68 60 68 52 L55 52 Z" />
+    <!-- S -->
+    <path d="M80 30 C90 30 95 35 95 40 C95 45 90 48 85 50 C90 52 95 55 95 60 C95 65 90 70 80 70 L80 63 C85 63 88 62 88 60 C88 58 85 57 80 55 C75 53 72 50 72 45 C72 40 75 37 80 37 L80 30 Z" />
+  </g>
+</svg>

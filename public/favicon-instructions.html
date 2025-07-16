@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Favicon Generation Instructions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .steps {
+      background-color: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .step {
+      margin-bottom: 15px;
+    }
+    code {
+      background-color: #eee;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <h1>How to Create a Proper Favicon for Your Website</h1>
+  
+  <div class="steps">
+    <h2>Option 1: Use an Online Favicon Generator (Recommended)</h2>
+    <div class="step">
+      <h3>Step 1:</h3>
+      <p>Visit one of these online favicon generators:</p>
+      <ul>
+        <li><a href="https://realfavicongenerator.net/" target="_blank">Real Favicon Generator</a></li>
+        <li><a href="https://favicon.io/" target="_blank">Favicon.io</a></li>
+        <li><a href="https://www.favicon-generator.org/" target="_blank">Favicon Generator</a></li>
+      </ul>
+    </div>
+    <div class="step">
+      <h3>Step 2:</h3>
+      <p>Upload your <code>A5S-logo.jpg</code> file to the generator.</p>
+    </div>
+    <div class="step">
+      <h3>Step 3:</h3>
+      <p>Download the generated favicon package.</p>
+    </div>
+    <div class="step">
+      <h3>Step 4:</h3>
+      <p>Extract the package and copy the <code>favicon.ico</code> file to your project's <code>public</code> directory.</p>
+    </div>
+  </div>
+
+  <div class="steps">
+    <h2>Option 2: Create a Favicon Using Image Editing Software</h2>
+    <div class="step">
+      <h3>Step 1:</h3>
+      <p>Open your logo in an image editing software like Photoshop, GIMP, or Paint.NET.</p>
+    </div>
+    <div class="step">
+      <h3>Step 2:</h3>
+      <p>Resize the image to 16x16, 32x32, or 48x48 pixels (multiple sizes are better).</p>
+    </div>
+    <div class="step">
+      <h3>Step 3:</h3>
+      <p>Save the image as a .ico file or use an online converter to convert from PNG/JPG to ICO format.</p>
+    </div>
+    <div class="step">
+      <h3>Step 4:</h3>
+      <p>Place the favicon.ico file in your project's <code>public</code> directory.</p>
+    </div>
+  </div>
+
+  <h2>After Creating Your Favicon</h2>
+  <p>Once you've created and placed your favicon.ico file in the public directory, your website should display the favicon in the browser tab. The Next.js configuration has already been updated to use this favicon.</p>
+
+  <p><strong>Note:</strong> For the best results across all devices and browsers, consider generating a complete set of favicon files (different sizes and formats) using Option 1.</p>
+</body>
+</html>

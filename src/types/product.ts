@@ -1,10 +1,12 @@
 export interface TProduct {
-  id: string;
+  id: number | string;
   name: string;
   imageUrl: string;
-  // description: string;
-  // price: number;
+  description?: string;
+  price: number;
+  mrp?: number;  // Original price before discount
   category: string;
+  brand?: string;
 }
 
 

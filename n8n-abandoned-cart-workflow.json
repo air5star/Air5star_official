@@ -1,0 +1,537 @@
+{
+  "name": "Air5Star Abandoned Cart Email Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "abandoned-cart-webhook",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://air5star.com,http://localhost:3000"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Abandoned Cart Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "abandoned-cart-trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "validate-email",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "regex",
+                "rightValue": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+              }
+            },
+            {
+              "id": "validate-cart-total",
+              "leftValue": "={{ $json.cart_total }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "validate-cart-items",
+              "leftValue": "={{ $json.cart_items.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "validate-data",
+      "name": "Validate Cart Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "success": false,
+          "error": "Invalid cart data provided"
+        },
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate recovery token\nconst crypto = require('crypto');\nconst userId = $input.first().json.user_id;\nconst timestamp = Date.now().toString();\nconst secret = 'your-jwt-secret'; // Use environment variable in production\n\nconst payload = `${userId}:${timestamp}:cart_data`;\nconst recoveryToken = crypto\n  .createHmac('sha256', secret)\n  .update(payload)\n  .digest('hex') + '.' + timestamp;\n\n// Prepare cart data for storage\nconst cartData = {\n  user_id: $input.first().json.user_id,\n  email: $input.first().json.email,\n  cart_items: $input.first().json.cart_items,\n  cart_total: $input.first().json.cart_total,\n  abandoned_at: $input.first().json.abandoned_at || new Date().toISOString(),\n  recovery_token: recoveryToken,\n  workflow_id: $workflow.id\n};\n\nreturn {\n  json: cartData\n};"
+      },
+      "id": "process-cart-data",
+      "name": "Process Cart Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "resource": "subscriber",
+        "email": "={{ $json.email }}",
+        "additionalFields": {
+          "customFields": {
+            "customFieldsValues": [
+              {
+                "fieldId": "cart_total",
+                "value": "={{ $json.cart_total }}"
+              },
+              {
+                "fieldId": "cart_items_count",
+                "value": "={{ $json.cart_items.length }}"
+              },
+              {
+                "fieldId": "recovery_token",
+                "value": "={{ $json.recovery_token }}"
+              },
+              {
+                "fieldId": "abandoned_at",
+                "value": "={{ $json.abandoned_at }}"
+              }
+            ]
+          },
+          "groups": ["abandoned_cart_group"]
+        }
+      },
+      "id": "add-to-mailerlite",
+      "name": "Add to MailerLite",
+      "type": "n8n-nodes-base.mailerLite",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "credentials": {
+        "mailerLiteApi": {
+          "id": "mailerlite-credentials",
+          "name": "MailerLite API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "success": true,
+          "message": "Abandoned cart workflow initiated",
+          "recovery_token": "={{ $json.recovery_token }}",
+          "scheduled_emails": 4
+        }
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "unit": "minutes",
+        "amount": 15
+      },
+      "id": "wait-15min",
+      "name": "Wait 15 Minutes",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [900, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate immediate email content\nconst cartData = $input.first().json;\nconst cartItems = cartData.cart_items;\nconst recoveryUrl = `https://air5star.com/cart?recovery=${cartData.recovery_token}`;\n\n// Generate cart items HTML\nconst itemsHtml = cartItems.map(item => `\n  <tr>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee;\">\n      <img src=\"${item.imageUrl}\" alt=\"${item.name}\" style=\"width: 60px; height: 60px; object-fit: cover; border-radius: 4px;\">\n    </td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee;\">\n      <strong>${item.name}</strong><br>\n      <small>Quantity: ${item.quantity}</small>\n    </td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee; text-align: right;\">\n      ₹${(item.price * item.quantity).toLocaleString()}\n    </td>\n  </tr>\n`).join('');\n\nconst emailHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>You left something in your cart!</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"text-align: center; margin-bottom: 30px;\">\n    <img src=\"https://air5star.com/logo-Air5Star.png\" alt=\"Air5Star\" style=\"height: 60px;\">\n  </div>\n  \n  <h1 style=\"color: #111184; text-align: center;\">You left something in your cart!</h1>\n  \n  <p>Hi there,</p>\n  \n  <p>We noticed you left some great HVAC products in your cart. Don't let them get away!</p>\n  \n  <div style=\"background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n    <h3 style=\"margin-top: 0;\">Your Cart Items:</h3>\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      ${itemsHtml}\n      <tr>\n        <td colspan=\"2\" style=\"padding: 15px 10px; font-weight: bold; border-top: 2px solid #111184;\">Total:</td>\n        <td style=\"padding: 15px 10px; font-weight: bold; text-align: right; border-top: 2px solid #111184;\">₹${cartData.cart_total.toLocaleString()}</td>\n      </tr>\n    </table>\n  </div>\n  \n  <div style=\"text-align: center; margin: 30px 0;\">\n    <a href=\"${recoveryUrl}\" style=\"background: #111184; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;\">Complete Your Purchase</a>\n  </div>\n  \n  <div style=\"border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #666; font-size: 12px;\">\n    <p>This email was sent because you have items in your cart at Air5Star.</p>\n    <p>If you no longer wish to receive these emails, <a href=\"#\" style=\"color: #111184;\">unsubscribe here</a>.</p>\n    <p>Air5Star - Your trusted HVAC partner</p>\n  </div>\n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    ...cartData,\n    email_subject: 'You left something in your cart!',\n    email_html: emailHtml,\n    sequence_type: 'immediate'\n  }\n};"
+      },
+      "id": "generate-immediate-email",
+      "name": "Generate Immediate Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 500]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "resource": "email",
+        "fromEmail": "noreply@air5star.com",
+        "fromName": "Air5Star",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.email_subject }}",
+        "emailType": "html",
+        "message": "={{ $json.email_html }}"
+      },
+      "id": "send-immediate-email",
+      "name": "Send Immediate Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1340, 500],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "unit": "hours",
+        "amount": 1
+      },
+      "id": "wait-1hour",
+      "name": "Wait 1 Hour",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1340, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate 1-hour reminder email\nconst cartData = $input.first().json;\nconst cartItems = cartData.cart_items;\nconst recoveryUrl = `https://air5star.com/cart?recovery=${cartData.recovery_token}`;\n\nconst itemsHtml = cartItems.map(item => `\n  <tr>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee;\">\n      <img src=\"${item.imageUrl}\" alt=\"${item.name}\" style=\"width: 60px; height: 60px; object-fit: cover; border-radius: 4px;\">\n    </td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee;\">\n      <strong>${item.name}</strong><br>\n      <small>Quantity: ${item.quantity}</small>\n    </td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee; text-align: right;\">\n      ₹${(item.price * item.quantity).toLocaleString()}\n    </td>\n  </tr>\n`).join('');\n\nconst emailHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Still thinking about your HVAC purchase?</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"text-align: center; margin-bottom: 30px;\">\n    <img src=\"https://air5star.com/logo-Air5Star.png\" alt=\"Air5Star\" style=\"height: 60px;\">\n  </div>\n  \n  <h1 style=\"color: #111184; text-align: center;\">Still thinking about your HVAC purchase?</h1>\n  \n  <p>Hi there,</p>\n  \n  <p>Your cart is waiting for you! These premium HVAC products are still available and ready to ship.</p>\n  \n  <div style=\"background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n    <h3 style=\"margin-top: 0;\">Your Reserved Items:</h3>\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      ${itemsHtml}\n      <tr>\n        <td colspan=\"2\" style=\"padding: 15px 10px; font-weight: bold; border-top: 2px solid #111184;\">Total:</td>\n        <td style=\"padding: 15px 10px; font-weight: bold; text-align: right; border-top: 2px solid #111184;\">₹${cartData.cart_total.toLocaleString()}</td>\n      </tr>\n    </table>\n  </div>\n  \n  <div style=\"text-align: center; margin: 30px 0;\">\n    <a href=\"${recoveryUrl}\" style=\"background: #111184; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;\">Complete Your Purchase</a>\n  </div>\n  \n  <div style=\"border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #666; font-size: 12px;\">\n    <p>This email was sent because you have items in your cart at Air5Star.</p>\n    <p>If you no longer wish to receive these emails, <a href=\"#\" style=\"color: #111184;\">unsubscribe here</a>.</p>\n    <p>Air5Star - Your trusted HVAC partner</p>\n  </div>\n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    ...cartData,\n    email_subject: 'Still thinking about your HVAC purchase?',\n    email_html: emailHtml,\n    sequence_type: 'reminder_1h'\n  }\n};"
+      },
+      "id": "generate-1h-reminder",
+      "name": "Generate 1H Reminder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 700]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "resource": "email",
+        "fromEmail": "noreply@air5star.com",
+        "fromName": "Air5Star",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.email_subject }}",
+        "emailType": "html",
+        "message": "={{ $json.email_html }}"
+      },
+      "id": "send-1h-reminder",
+      "name": "Send 1H Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1780, 700],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "unit": "hours",
+        "amount": 23
+      },
+      "id": "wait-24hours",
+      "name": "Wait 24 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1780, 900]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate 24-hour reminder email\nconst cartData = $input.first().json;\nconst cartItems = cartData.cart_items;\nconst recoveryUrl = `https://air5star.com/cart?recovery=${cartData.recovery_token}`;\n\nconst itemsHtml = cartItems.map(item => `\n  <tr>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee;\">\n      <img src=\"${item.imageUrl}\" alt=\"${item.name}\" style=\"width: 60px; height: 60px; object-fit: cover; border-radius: 4px;\">\n    </td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee;\">\n      <strong>${item.name}</strong><br>\n      <small>Quantity: ${item.quantity}</small>\n    </td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee; text-align: right;\">\n      ₹${(item.price * item.quantity).toLocaleString()}\n    </td>\n  </tr>\n`).join('');\n\nconst emailHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Don't miss out on these great products!</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"text-align: center; margin-bottom: 30px;\">\n    <img src=\"https://air5star.com/logo-Air5Star.png\" alt=\"Air5Star\" style=\"height: 60px;\">\n  </div>\n  \n  <h1 style=\"color: #111184; text-align: center;\">Don't miss out on these great products!</h1>\n  \n  <p>Hi there,</p>\n  \n  <p>Your cart items are still reserved, but they won't wait forever. Complete your purchase today!</p>\n  \n  <div style=\"background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n    <h3 style=\"margin-top: 0;\">Your Reserved Items:</h3>\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      ${itemsHtml}\n      <tr>\n        <td colspan=\"2\" style=\"padding: 15px 10px; font-weight: bold; border-top: 2px solid #111184;\">Total:</td>\n        <td style=\"padding: 15px 10px; font-weight: bold; text-align: right; border-top: 2px solid #111184;\">₹${cartData.cart_total.toLocaleString()}</td>\n      </tr>\n    </table>\n  </div>\n  \n  <div style=\"text-align: center; margin: 30px 0;\">\n    <a href=\"${recoveryUrl}\" style=\"background: #111184; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;\">Complete Your Purchase Now</a>\n  </div>\n  \n  <div style=\"border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #666; font-size: 12px;\">\n    <p>This email was sent because you have items in your cart at Air5Star.</p>\n    <p>If you no longer wish to receive these emails, <a href=\"#\" style=\"color: #111184;\">unsubscribe here</a>.</p>\n    <p>Air5Star - Your trusted HVAC partner</p>\n  </div>\n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    ...cartData,\n    email_subject: \"Don't miss out on these great products!\",\n    email_html: emailHtml,\n    sequence_type: 'reminder_24h'\n  }\n};"
+      },
+      "id": "generate-24h-reminder",
+      "name": "Generate 24H Reminder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 900]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "resource": "email",
+        "fromEmail": "noreply@air5star.com",
+        "fromName": "Air5Star",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.email_subject }}",
+        "emailType": "html",
+        "message": "={{ $json.email_html }}"
+      },
+      "id": "send-24h-reminder",
+      "name": "Send 24H Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2220, 900],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "unit": "hours",
+        "amount": 24
+      },
+      "id": "wait-48hours",
+      "name": "Wait 48 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [2220, 1100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate final email with discount\nconst cartData = $input.first().json;\nconst cartItems = cartData.cart_items;\nconst recoveryUrl = `https://air5star.com/cart?recovery=${cartData.recovery_token}`;\n\n// Generate discount code based on user ID\nconst discountCodes = [\n  { code: 'COMEBACK10', percentage: 10 },\n  { code: 'SAVE15', percentage: 15 },\n  { code: 'RETURN20', percentage: 20 }\n];\nconst userIdHash = cartData.user_id.slice(-1);\nconst discountIndex = parseInt(userIdHash) % discountCodes.length;\nconst discount = discountCodes[discountIndex];\n\nconst itemsHtml = cartItems.map(item => `\n  <tr>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee;\">\n      <img src=\"${item.imageUrl}\" alt=\"${item.name}\" style=\"width: 60px; height: 60px; object-fit: cover; border-radius: 4px;\">\n    </td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee;\">\n      <strong>${item.name}</strong><br>\n      <small>Quantity: ${item.quantity}</small>\n    </td>\n    <td style=\"padding: 10px; border-bottom: 1px solid #eee; text-align: right;\">\n      ₹${(item.price * item.quantity).toLocaleString()}\n    </td>\n  </tr>\n`).join('');\n\nconst emailHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Last chance - Special discount inside!</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"text-align: center; margin-bottom: 30px;\">\n    <img src=\"https://air5star.com/logo-Air5Star.png\" alt=\"Air5Star\" style=\"height: 60px;\">\n  </div>\n  \n  <h1 style=\"color: #111184; text-align: center;\">Last chance - Special discount inside!</h1>\n  \n  <p>Hi there,</p>\n  \n  <p>This is your final reminder! We've added a special discount to help you complete your purchase.</p>\n  \n  <div style=\"background: #f0f9ff; border: 2px dashed #0ea5e9; padding: 20px; margin: 20px 0; text-align: center; border-radius: 8px;\">\n    <h3 style=\"color: #0ea5e9; margin: 0 0 10px 0;\">Special Offer Just for You!</h3>\n    <p style=\"margin: 0 0 10px 0;\">Use code <strong style=\"font-size: 18px; color: #dc2626;\">${discount.code}</strong> for ${discount.percentage}% off your order!</p>\n    <small style=\"color: #666;\">Valid for 48 hours only</small>\n  </div>\n  \n  <div style=\"background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n    <h3 style=\"margin-top: 0;\">Your Cart Items:</h3>\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      ${itemsHtml}\n      <tr>\n        <td colspan=\"2\" style=\"padding: 15px 10px; font-weight: bold; border-top: 2px solid #111184;\">Total:</td>\n        <td style=\"padding: 15px 10px; font-weight: bold; text-align: right; border-top: 2px solid #111184;\">₹${cartData.cart_total.toLocaleString()}</td>\n      </tr>\n    </table>\n  </div>\n  \n  <div style=\"text-align: center; margin: 30px 0;\">\n    <a href=\"${recoveryUrl}\" style=\"background: #dc2626; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; font-size: 16px;\">Claim Your Discount Now!</a>\n  </div>\n  \n  <div style=\"border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #666; font-size: 12px;\">\n    <p>This email was sent because you have items in your cart at Air5Star.</p>\n    <p>If you no longer wish to receive these emails, <a href=\"#\" style=\"color: #111184;\">unsubscribe here</a>.</p>\n    <p>Air5Star - Your trusted HVAC partner</p>\n  </div>\n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    ...cartData,\n    email_subject: 'Last chance - Special discount inside!',\n    email_html: emailHtml,\n    sequence_type: 'final_48h',\n    discount_code: discount.code,\n    discount_percentage: discount.percentage\n  }\n};"
+      },
+      "id": "generate-final-email",
+      "name": "Generate Final Email with Discount",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2440, 1100]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "resource": "email",
+        "fromEmail": "noreply@air5star.com",
+        "fromName": "Air5Star",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.email_subject }}",
+        "emailType": "html",
+        "message": "={{ $json.email_html }}"
+      },
+      "id": "send-final-email",
+      "name": "Send Final Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2660, 1100],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP Credentials"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "validate-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validate-data": {
+      "main": [
+        [
+          {
+            "node": "process-cart-data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-cart-data": {
+      "main": [
+        [
+          {
+            "node": "add-to-mailerlite",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "wait-15min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add-to-mailerlite": {
+      "main": [
+        [
+          {
+            "node": "success-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wait-15min": {
+      "main": [
+        [
+          {
+            "node": "generate-immediate-email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-immediate-email": {
+      "main": [
+        [
+          {
+            "node": "send-immediate-email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-immediate-email": {
+      "main": [
+        [
+          {
+            "node": "wait-1hour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wait-1hour": {
+      "main": [
+        [
+          {
+            "node": "generate-1h-reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-1h-reminder": {
+      "main": [
+        [
+          {
+            "node": "send-1h-reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-1h-reminder": {
+      "main": [
+        [
+          {
+            "node": "wait-24hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wait-24hours": {
+      "main": [
+        [
+          {
+            "node": "generate-24h-reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-24h-reminder": {
+      "main": [
+        [
+          {
+            "node": "send-24h-reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-24h-reminder": {
+      "main": [
+        [
+          {
+            "node": "wait-48hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wait-48hours": {
+      "main": [
+        [
+          {
+            "node": "generate-final-email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-final-email": {
+      "main": [
+        [
+          {
+            "node": "send-final-email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "Asia/Kolkata",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": {
+      "id": "error-handler-workflow"
+    }
+  },
+  "staticData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "1.0.0",
+  "triggerCount": 1,
+  "tags": [
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "abandoned-cart",
+      "name": "Abandoned Cart"
+    },
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "email-automation",
+      "name": "Email Automation"
+    }
+  ]
+}

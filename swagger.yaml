@@ -1,0 +1,1081 @@
+openapi: 3.0.3
+info:
+  title: Air5Star eCommerce AI-Powered API
+  description: |
+    AI-powered features API for Air5Star HVAC eCommerce platform.
+    
+    This API provides intelligent features including:
+    - Smart chatbot integration with product lookup
+    - Advanced search with autocomplete and highlighting
+    - Personalized product recommendations
+    - Abandoned cart email automation
+    - Inventory forecasting and alerts
+    
+    ## Security
+    - All endpoints use HTTPS
+    - API keys stored in environment variables
+    - HMAC signature verification for webhooks
+    - Minimal PII exposure to third-party services
+    
+    ## Rate Limiting
+    - Search endpoints: 100 requests/minute
+    - Recommendation endpoints: 50 requests/minute
+    - Webhook endpoints: 1000 requests/hour
+  version: 1.0.0
+  contact:
+    name: Air5Star Development Team
+    email: dev@air5star.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://air5star.com/api
+    description: Production server
+
+paths:
+  /tidio-webhook:
+    post:
+      tags:
+        - Chatbot
+      summary: Handle Tidio chatbot webhook
+      description: |
+        Processes chatbot interactions and provides intelligent responses.
+        Supports product lookups, search queries, and general customer service.
+      security:
+        - HmacSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TidioWebhookRequest'
+            example:
+              type: "message"
+              visitor_id: "visitor_123"
+              message: "I'm looking for a 1.5 ton split AC"
+              timestamp: "2024-01-15T10:30:00Z"
+              metadata:
+                source: "widget"
+                page_url: "https://air5star.com/products"
+      responses:
+        '200':
+          description: Successful webhook processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TidioWebhookResponse'
+              example:
+                success: true
+                response:
+                  type: "message"
+                  content: "I found 3 great 1.5 ton split ACs for you!"
+                  products:
+                    - id: "1"
+                      name: "Split AC 1.5 Ton Inverter"
+                      price: 35000
+                      image: "/images/split-ac-1.jpg"
+                      url: "/products/1"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    get:
+      tags:
+        - Chatbot
+      summary: Health check for chatbot webhook
+      description: Verify webhook endpoint availability
+      responses:
+        '200':
+          description: Webhook is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /search:
+    get:
+      tags:
+        - Search
+      summary: Smart search with autocomplete
+      description: |
+        Intelligent product search with autocomplete, highlighting, and relevance scoring.
+        Supports both full search and autocomplete modes.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+          example: "split ac"
+        - name: autocomplete
+          in: query
+          description: Enable autocomplete mode
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: category
+          in: query
+          description: Filter by product category
+          schema:
+            type: string
+          example: "Air Conditioners"
+        - name: min_price
+          in: query
+          description: Minimum price filter
+          schema:
+            type: number
+            minimum: 0
+        - name: max_price
+          in: query
+          description: Maximum price filter
+          schema:
+            type: number
+            minimum: 0
+        - name: offset
+          in: query
+          description: Number of results to skip for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: sort_by
+          in: query
+          description: Sort results by specified field
+          schema:
+            type: string
+            enum: ["relevance", "price_asc", "price_desc", "name"]
+            default: "relevance"
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              example:
+                success: true
+                data:
+                  results:
+                    - id: "1"
+                      name: "Split AC 1.5 Ton Inverter"
+                      category: "Air Conditioners"
+                      price: 35000
+                      imageUrl: "/images/split-ac-1.jpg"
+                      relevance_score: 0.95
+                      highlighted_name: "<mark>Split AC</mark> 1.5 Ton Inverter"
+                  suggestions:
+                    - "split ac 1 ton"
+                    - "split ac 2 ton"
+                  total: 15
+                  query: "split ac"
+                  autocomplete: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /recommendations:
+    get:
+      tags:
+        - Recommendations
+      summary: Get personalized product recommendations
+      description: |
+        Retrieve personalized product recommendations based on user behavior,
+        product similarity, trending items, or category preferences.
+      parameters:
+        - name: type
+          in: query
+          required: true
+          description: Type of recommendations
+          schema:
+            type: string
+            enum: ["similar", "trending", "personalized", "category"]
+          example: "similar"
+        - name: product_id
+          in: query
+          description: Product ID for similar recommendations
+          schema:
+            type: string
+          example: "1"
+        - name: user_id
+          in: query
+          description: User ID for personalized recommendations
+          schema:
+            type: string
+          example: "user_123"
+        - name: category
+          in: query
+          description: Category for category-based recommendations
+          schema:
+            type: string
+          example: "Air Conditioners"
+        - name: limit
+          in: query
+          description: Maximum number of recommendations
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
+        - name: exclude_viewed
+          in: query
+          description: Exclude previously viewed products
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Recommendation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+              example:
+                success: true
+                data:
+                  recommendations:
+                    - id: "2"
+                      name: "Split AC 2 Ton Inverter"
+                      category: "Air Conditioners"
+                      price: 45000
+                      imageUrl: "/images/split-ac-2.jpg"
+                      confidence_score: 0.87
+                      reason: "Similar to your viewed product"
+                  metadata:
+                    type: "similar"
+                    total_available: 25
+                    generated_at: "2024-01-15T10:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    post:
+      tags:
+        - Recommendations
+      summary: Track user interaction
+      description: |
+        Track user interactions (views, cart additions, purchases) to improve
+        personalized recommendations.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInteractionRequest'
+            example:
+              user_id: "user_123"
+              product_id: "1"
+              action: "view"
+              timestamp: "2024-01-15T10:30:00Z"
+              metadata:
+                page_url: "/products/1"
+                session_id: "session_456"
+      responses:
+        '200':
+          description: Interaction tracked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                example:
+                  success: true
+                  message: "User interaction tracked successfully"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    head:
+      tags:
+        - Recommendations
+      summary: Health check for recommendations service
+      responses:
+        '200':
+          description: Service is healthy
+
+  /abandoned-cart:
+    post:
+      tags:
+        - Email Automation
+      summary: Initiate abandoned cart workflow
+      description: |
+        Start an automated email sequence for abandoned cart recovery.
+        Sends personalized emails with cart contents and discount offers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbandonedCartRequest'
+            example:
+              user_id: "user_123"
+              email: "customer@example.com"
+              cart_items:
+                - id: "1"
+                  name: "Split AC 1.5 Ton"
+                  price: 35000
+                  quantity: 1
+                  imageUrl: "/images/split-ac-1.jpg"
+              cart_total: 35000
+              abandoned_at: "2024-01-15T10:30:00Z"
+      responses:
+        '200':
+          description: Abandoned cart workflow initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbandonedCartResponse'
+              example:
+                success: true
+                message: "Abandoned cart workflow initiated"
+                recovery_token: "abc123def456"
+                data:
+                  user_id: "user_123"
+                  scheduled_emails: 4
+                  recovery_url: "https://air5star.com/cart?recovery=abc123def456"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    get:
+      tags:
+        - Email Automation
+      summary: Retrieve abandoned cart data
+      description: |
+        Get abandoned cart data using recovery token for cart restoration.
+      parameters:
+        - name: recovery_token
+          in: query
+          required: true
+          description: Cart recovery token
+          schema:
+            type: string
+          example: "abc123def456"
+        - name: user_id
+          in: query
+          required: true
+          description: User ID
+          schema:
+            type: string
+          example: "user_123"
+      responses:
+        '200':
+          description: Cart data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      cart_items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CartItem'
+                      cart_total:
+                        type: number
+                      abandoned_at:
+                        type: string
+                        format: date-time
+                      discount:
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                          percentage:
+                            type: number
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Cart data not found
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    head:
+      tags:
+        - Email Automation
+      summary: Health check for email automation service
+      responses:
+        '200':
+          description: Service is healthy
+
+  /inventory-forecast:
+    get:
+      tags:
+        - Inventory Management
+      summary: Get inventory forecast and alerts
+      description: |
+        Generate inventory forecasts, reorder alerts, and demand predictions
+        based on historical sales data and seasonal patterns.
+      parameters:
+        - name: product_id
+          in: query
+          description: Specific product ID to forecast
+          schema:
+            type: string
+          example: "1"
+        - name: category
+          in: query
+          description: Product category to forecast
+          schema:
+            type: string
+          example: "Air Conditioners"
+        - name: days_ahead
+          in: query
+          description: Number of days to forecast
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+        - name: include_seasonality
+          in: query
+          description: Include seasonal factors in forecast
+          schema:
+            type: boolean
+            default: true
+        - name: confidence_level
+          in: query
+          description: Forecast confidence level
+          schema:
+            type: number
+            minimum: 0.5
+            maximum: 0.99
+            default: 0.95
+      responses:
+        '200':
+          description: Forecast results and alerts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryForecastResponse'
+              example:
+                success: true
+                data:
+                  forecasts:
+                    - product_id: "1"
+                      product_name: "Split AC 1.5 Ton"
+                      category: "Air Conditioners"
+                      current_stock: 25
+                      predicted_demand: 18
+                      reorder_point: 15
+                      suggested_order_quantity: 30
+                      forecast_accuracy: 0.85
+                      risk_level: "medium"
+                      seasonal_factors:
+                        - month: 4
+                          factor: 1.5
+                        - month: 5
+                          factor: 2.0
+                      trend_analysis:
+                        direction: "increasing"
+                        strength: 0.7
+                  alerts:
+                    - product_id: "3"
+                      product_name: "Window AC 1 Ton"
+                      current_stock: 8
+                      reorder_point: 15
+                      days_until_stockout: 12
+                      priority: "high"
+                      suggested_action: "Reorder immediately"
+                  summary:
+                    total_products: 5
+                    high_risk_products: 2
+                    urgent_alerts: 1
+                    forecast_period_days: 30
+                    generated_at: "2024-01-15T10:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    post:
+      tags:
+        - Inventory Management
+      summary: Upload sales data for forecasting
+      description: |
+        Upload historical sales data to improve forecast accuracy.
+        Accepts bulk sales data in JSON format.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SalesDataPoint'
+            example:
+              - product_id: "1"
+                date: "2024-01-01T00:00:00Z"
+                quantity_sold: 5
+                revenue: 175000
+                category: "Air Conditioners"
+              - product_id: "1"
+                date: "2024-01-02T00:00:00Z"
+                quantity_sold: 3
+                revenue: 105000
+                category: "Air Conditioners"
+      responses:
+        '200':
+          description: Sales data uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      records_processed:
+                        type: integer
+                      date_range:
+                        type: object
+                        properties:
+                          from:
+                            type: integer
+                            format: int64
+                          to:
+                            type: integer
+                            format: int64
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    put:
+      tags:
+        - Inventory Management
+      summary: Export sales data
+      description: |
+        Export sales data in JSON or CSV format with optional filtering.
+      parameters:
+        - name: format
+          in: query
+          description: Export format
+          schema:
+            type: string
+            enum: ["json", "csv"]
+            default: "json"
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          description: Start date filter
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date filter
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Sales data exported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SalesDataPoint'
+                  summary:
+                    type: object
+                    properties:
+                      total_records:
+                        type: integer
+                      total_revenue:
+                        type: number
+                      total_quantity:
+                        type: integer
+            text/csv:
+              schema:
+                type: string
+                example: |
+                  "Product ID","Date","Quantity Sold","Revenue","Category"
+                  "1","2024-01-01T00:00:00Z","5","175000","Air Conditioners"
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    head:
+      tags:
+        - Inventory Management
+      summary: Health check for inventory service
+      responses:
+        '200':
+          description: Service is healthy
+
+components:
+  securitySchemes:
+    HmacSignature:
+      type: apiKey
+      in: header
+      name: X-Tidio-Signature
+      description: HMAC SHA-256 signature for webhook verification
+  
+  schemas:
+    TidioWebhookRequest:
+      type: object
+      required:
+        - type
+        - visitor_id
+        - message
+        - timestamp
+      properties:
+        type:
+          type: string
+          enum: ["message", "visitor_data", "conversation_started"]
+        visitor_id:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          properties:
+            source:
+              type: string
+            page_url:
+              type: string
+              format: uri
+    
+    TidioWebhookResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        response:
+          type: object
+          properties:
+            type:
+              type: string
+            content:
+              type: string
+            products:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProductSummary'
+    
+    SearchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/SearchResult'
+            suggestions:
+              type: array
+              items:
+                type: string
+            total:
+              type: integer
+            query:
+              type: string
+            mode:
+              type: string
+    
+    SearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        imageUrl:
+          type: string
+          format: uri
+        relevance_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        highlighted_name:
+          type: string
+    
+    RecommendationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            recommendations:
+              type: array
+              items:
+                $ref: '#/components/schemas/RecommendationResult'
+            metadata:
+              type: object
+              properties:
+                type:
+                  type: string
+                total_available:
+                  type: integer
+                generated_at:
+                  type: string
+                  format: date-time
+    
+    RecommendationResult:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        imageUrl:
+          type: string
+          format: uri
+        confidence_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        reason:
+          type: string
+    
+    UserInteractionRequest:
+      type: object
+      required:
+        - user_id
+        - product_id
+        - action
+      properties:
+        user_id:
+          type: string
+        product_id:
+          type: string
+        action:
+          type: string
+          enum: ["view", "add_to_cart", "purchase", "wishlist_add", "wishlist_remove"]
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          properties:
+            page_url:
+              type: string
+              format: uri
+            session_id:
+              type: string
+    
+    AbandonedCartRequest:
+      type: object
+      required:
+        - user_id
+        - email
+        - cart_items
+        - cart_total
+      properties:
+        user_id:
+          type: string
+        email:
+          type: string
+          format: email
+        cart_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        cart_total:
+          type: number
+          minimum: 0
+        abandoned_at:
+          type: string
+          format: date-time
+    
+    AbandonedCartResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        recovery_token:
+          type: string
+        data:
+          type: object
+          properties:
+            user_id:
+              type: string
+            scheduled_emails:
+              type: integer
+            recovery_url:
+              type: string
+              format: uri
+    
+    CartItem:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - quantity
+        - imageUrl
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+          minimum: 0
+        quantity:
+          type: integer
+          minimum: 1
+        imageUrl:
+          type: string
+          format: uri
+    
+    InventoryForecastResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            forecasts:
+              type: array
+              items:
+                $ref: '#/components/schemas/ForecastResult'
+            alerts:
+              type: array
+              items:
+                $ref: '#/components/schemas/InventoryAlert'
+            summary:
+              type: object
+              properties:
+                total_products:
+                  type: integer
+                high_risk_products:
+                  type: integer
+                urgent_alerts:
+                  type: integer
+                forecast_period_days:
+                  type: integer
+                generated_at:
+                  type: string
+                  format: date-time
+    
+    ForecastResult:
+      type: object
+      properties:
+        product_id:
+          type: string
+        product_name:
+          type: string
+        category:
+          type: string
+        current_stock:
+          type: integer
+        predicted_demand:
+          type: integer
+        reorder_point:
+          type: integer
+        suggested_order_quantity:
+          type: integer
+        forecast_accuracy:
+          type: number
+          minimum: 0
+          maximum: 1
+        risk_level:
+          type: string
+          enum: ["low", "medium", "high"]
+        seasonal_factors:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: integer
+                minimum: 1
+                maximum: 12
+              factor:
+                type: number
+        trend_analysis:
+          type: object
+          properties:
+            direction:
+              type: string
+              enum: ["increasing", "decreasing", "stable"]
+            strength:
+              type: number
+              minimum: 0
+              maximum: 1
+    
+    InventoryAlert:
+      type: object
+      properties:
+        product_id:
+          type: string
+        product_name:
+          type: string
+        current_stock:
+          type: integer
+        reorder_point:
+          type: integer
+        days_until_stockout:
+          type: integer
+        priority:
+          type: string
+          enum: ["urgent", "high", "medium", "low"]
+        suggested_action:
+          type: string
+    
+    SalesDataPoint:
+      type: object
+      required:
+        - product_id
+        - date
+        - quantity_sold
+        - revenue
+      properties:
+        product_id:
+          type: string
+        date:
+          type: string
+          format: date-time
+        quantity_sold:
+          type: integer
+          minimum: 0
+        revenue:
+          type: number
+          minimum: 0
+        category:
+          type: string
+    
+    ProductSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        image:
+          type: string
+          format: uri
+        url:
+          type: string
+          format: uri
+    
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+  
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: "Invalid request parameters"
+            details:
+              - field: "email"
+                message: "Invalid email format"
+    
+    Unauthorized:
+      description: Unauthorized - Invalid or missing authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: "Invalid or missing authentication"
+    
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: "Internal server error"
+
+tags:
+  - name: Chatbot
+    description: AI-powered chatbot integration with Tidio
+  - name: Search
+    description: Smart search with autocomplete and highlighting
+  - name: Recommendations
+    description: Personalized product recommendations
+  - name: Email Automation
+    description: Abandoned cart email automation
+  - name: Inventory Management
+    description: Inventory forecasting and alerts

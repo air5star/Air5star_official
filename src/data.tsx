@@ -13,25 +13,8 @@ export const products: TProduct[] = [
     imageUrl: '/ac-1.webp',
     category: 'air-conditioning',
   },
-  {
-    id: '3',
-    name: 'HVAC Materials',
-    imageUrl: '/hvac-materials.jpg',
-    category: 'hvac-materials-spares',
-  },
-  {
-    id: '4',
-    name: 'Refrigiration',
-    imageUrl: '/refrigiration.jpg',
-    category: 'refrigiration',
-  },
-  {
-    id: '5',
-    name: 'Heating',
-    imageUrl: '/air-purifier.webp',
-    category: 'heating',
-  },
 ];
+
 
 // export const electronicProducts: AProducts[] = [
 //   {
@@ -913,7 +896,7 @@ export const productsData = [
       },
       {
         id: 26,
-        category: 'air-conditioning ',
+        category: 'air-conditioning',
         subCategory: 'Hot and Cold Inverter Split AC',
         brand: 'DAIKIN',
         productTitle:
@@ -938,7 +921,7 @@ export const productsData = [
       },
       {
         id: 27,
-        category: 'air-conditioning ',
+        category: 'air-conditioning',
         subCategory: 'Split AC',
         brand: 'DAIKIN',
         productTitle: '1.8 Ton 5 Star Inverter Split AC, Copper, JTKJ60U',
@@ -962,7 +945,7 @@ export const productsData = [
       },
       {
         id: 28,
-        category: 'air-conditioning ',
+        category: 'air-conditioning',
         subCategory: 'Split AC',
         brand: 'DAIKIN',
         productTitle:
@@ -987,7 +970,7 @@ export const productsData = [
       },
       {
         id: 29,
-        category: 'air-conditioning ',
+        category: 'air-conditioning',
         subCategory: 'Split AC',
         brand: 'DAIKIN',
         productTitle: '2.02 Ton 3 Star Inverter Split AC, Copper, FTKL71U',
@@ -1011,7 +994,7 @@ export const productsData = [
       },
       {
         id: 30,
-        category: 'air-conditioning ',
+        category: 'air-conditioning',
         subCategory: 'Split AC',
         brand: 'DAIKIN',
         productTitle: '0.8 Ton 3 Star Non Inverter Split AC, FTL30UV',

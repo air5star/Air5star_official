@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air5Star API Documentation - Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin: 0;
+            background: #fafafa;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+        .swagger-ui .topbar {
+            background-color: #111184;
+        }
+        .swagger-ui .topbar .download-url-wrapper .select-label {
+            color: white;
+        }
+        .swagger-ui .info .title {
+            color: #111184;
+        }
+        .custom-header {
+            background: linear-gradient(135deg, #111184 0%, #0d0d6b 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .custom-header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .custom-header p {
+            margin: 10px 0 0 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .test-info {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px;
+            color: #0c5460;
+        }
+        .test-info h3 {
+            margin-top: 0;
+            color: #111184;
+        }
+        .endpoint-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .endpoint-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .method {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: white;
+            margin-right: 8px;
+        }
+        .method.get { background-color: #61affe; }
+        .method.post { background-color: #49cc90; }
+        .method.put { background-color: #fca130; }
+        .method.delete { background-color: #f93e3e; }
+    </style>
+</head>
+<body>
+    <div class="custom-header">
+        <h1>🌟 Air5Star API Testing Center</h1>
+        <p>Interactive API Documentation & Testing Interface</p>
+    </div>
+    
+    <div class="test-info">
+        <h3>🚀 Quick Start Guide</h3>
+        <p><strong>Server:</strong> Make sure your development server is running at <code>http://localhost:3000</code></p>
+        <p><strong>Testing:</strong> Use the "Try it out" button on each endpoint to test with real data</p>
+        
+        <h4>📋 Available Endpoints:</h4>
+        <div class="endpoint-list">
+            <div class="endpoint-item">
+                <span class="method post">POST</span>/api/tidio-webhook
+                <br><small>Chatbot webhook integration</small>
+            </div>
+            <div class="endpoint-item">
+                <span class="method get">GET</span>/api/search
+                <br><small>Smart search with autocomplete</small>
+            </div>
+            <div class="endpoint-item">
+                <span class="method get">GET</span>/api/recommendations
+                <br><small>Personalized product recommendations</small>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>/api/recommendations
+                <br><small>Track user interactions</small>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>/api/abandoned-cart
+                <br><small>Submit abandoned cart data</small>
+            </div>
+            <div class="endpoint-item">
+                <span class="method get">GET</span>/api/abandoned-cart
+                <br><small>Retrieve cart recovery data</small>
+            </div>
+            <div class="endpoint-item">
+                <span class="method get">GET</span>/api/inventory-forecast
+                <br><small>Get inventory forecasts</small>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>/api/inventory-forecast
+                <br><small>Upload sales data</small>
+            </div>
+            <div class="endpoint-item">
+                <span class="method put">PUT</span>/api/inventory-forecast
+                <br><small>Export sales data (CSV)</small>
+            </div>
+        </div>
+        
+        <h4>💡 Testing Tips:</h4>
+        <ul>
+            <li><strong>Search API:</strong> Try queries like "air conditioner", "split ac", "1.5 ton"</li>
+            <li><strong>Recommendations:</strong> Use type="trending", "similar", "category", or "collaborative"</li>
+            <li><strong>Inventory Forecast:</strong> Test with productId=1 and different day ranges</li>
+            <li><strong>Health Checks:</strong> All endpoints support HEAD requests for status checks</li>
+        </ul>
+    </div>
+
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            // Determine the base URL dynamically
+            const baseUrl = window.location.origin;
+            
+            const ui = SwaggerUIBundle({
+                url: baseUrl + '/swagger.yaml',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                tryItOutEnabled: true,
+                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'head'],
+                onComplete: function() {
+                    console.log('Swagger UI loaded successfully!');
+                    
+                    // Update server URL to match current environment
+                    const servers = ui.getSystem().specSelectors.servers();
+                    if (servers && servers.size > 0) {
+                        // Set development server as default
+                        ui.getSystem().specActions.setServer(baseUrl + '/api');
+                    }
+                },
+                onFailure: function(error) {
+                    console.error('Failed to load Swagger UI:', error);
+                    document.getElementById('swagger-ui').innerHTML = 
+                        '<div style="padding: 20px; color: red; text-align: center;">' +
+                        '<h3>❌ Failed to load API documentation</h3>' +
+                        '<p>Make sure the swagger.yaml file is accessible at: ' + baseUrl + '/swagger.yaml</p>' +
+                        '<p>Error: ' + error.message + '</p>' +
+                        '</div>';
+                },
+                requestInterceptor: function(request) {
+                    // Add any custom headers or modifications here
+                    console.log('API Request:', request.method, request.url);
+                    return request;
+                },
+                responseInterceptor: function(response) {
+                    console.log('API Response:', response.status, response.url);
+                    return response;
+                }
+            });
+            
+            window.ui = ui;
+        };
+    </script>
+</body>
+</html>

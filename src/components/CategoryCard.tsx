@@ -1,11 +1,14 @@
+import React from 'react';
 import { TProduct } from '../types/product'
-import Product from './Product'
+import CategoryItem from './CategoryItem'
 
 const CategoryCard: React.FC<{products: TProduct[]}> = ({products}) => {
   return (
-    <div className='grid'>
+    <div className='w-full'>
       {products.map((product) => (
-        <Product key={product.id} product={product} />
+        <div key={product.id} className="w-full">
+          <CategoryItem key={product.id} product={product} />
+        </div>
       ))}
     </div>
   )

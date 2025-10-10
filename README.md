@@ -92,3 +92,29 @@ This project is for demonstration and educational purposes. Please contact Air5S
 ---
 
 © 2025 Air5Star Cooling Technology Pvt Ltd
+## CI/CD: Deploy from GitHub via Cloud Build
+
+This project includes `cloudbuild.yaml` to build and deploy to Cloud Run automatically from GitHub. Use these steps to wire it up without using local CLI:
+
+1. Enable services (already enabled): `run.googleapis.com`, `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `secretmanager.googleapis.com`, `sqladmin.googleapis.com`.
+2. Create Artifact Registry repo:
+   - Console → Artifact Registry → Repositories → Create
+   - Name: `air5star`, Format: Docker, Location: `asia-south1`.
+3. Create secrets in Secret Manager:
+   - `NEXTAUTH_SECRET`: strong random base64 string
+   - `DATABASE_URL`: e.g. `postgresql://appuser:<password>@localhost:5432/ecommerce?host=/cloudsql/air5star-ecommerce:asia-south1:air5star-postgres`
+   - Keep special characters URL-encoded (`#` → `%23`).
+4. Grant Cloud Build service account permissions:
+   - Principal: `<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com`
+   - Roles: `roles/run.admin`, `roles/artifactregistry.writer`, `roles/secretmanager.secretAccessor`.
+   - Runtime service account for Cloud Run should have `roles/cloudsql.client` to access Cloud SQL.
+5. Connect GitHub repo:
+   - Console → Cloud Build → Triggers → Connect repository (GitHub App)
+   - Create trigger: Event: push to `main`, Config: `cloudbuild.yaml`.
+6. Push to `main` (or trigger branch): Cloud Build will build the Docker image, push to Artifact Registry, and deploy to Cloud Run.
+
+### Notes
+- The deploy step sets env vars and adds Cloud SQL connection automatically.
+- For the first deploy, seeding runs via `start.js` with `SEED_DB=true` and `scripts/seed-all-products.js`.
+- After products are populated, set `SEED_DB=false` (update the trigger with a substitution or change `cloudbuild.yaml`).
+- Update `NEXTAUTH_URL` in Cloud Run to your final HTTPS domain or service URL.

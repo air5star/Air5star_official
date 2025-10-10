@@ -33,9 +33,9 @@ steps:
   - name: gcr.io/cloud-builders/gcloud
     id: Deploy to Cloud Run
     entrypoint: bash
-    env:
-      - 'NEXTAUTH_SECRET=$(NEXTAUTH_SECRET)'
-      - 'DATABASE_URL=$(DATABASE_URL)'
+    secretEnv:
+      - NEXTAUTH_SECRET
+      - DATABASE_URL
     args:
       - -c
       - |
@@ -48,7 +48,7 @@ steps:
           --cpu 1 \
           --memory 1Gi \
           --add-cloudsql-instances air5star-ecommerce:asia-south1:air5star-postgres \
-          --set-env-vars NODE_ENV=production,NEXTAUTH_SECRET=$$NEXTAUTH_SECRET,SEED_DB=true,SEED_SCRIPT=scripts/seed-all-products.js,DATABASE_URL=$$DATABASE_URL
+          --set-env-vars NODE_ENV=production,NEXTAUTH_SECRET=$NEXTAUTH_SECRET,SEED_DB=true,SEED_SCRIPT=scripts/seed-all-products.js,DATABASE_URL=$DATABASE_URL
 
 images:
   - asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA

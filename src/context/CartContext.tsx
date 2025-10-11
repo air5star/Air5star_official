@@ -17,6 +17,7 @@ type CartItem = {
     mrp?: number;
     imageUrl: string;
     category: any;
+    brand?: string;
   };
   maxQuantity?: number;
 };
@@ -97,7 +98,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             price: item.product.price,
             mrp: item.product.mrp,
             imageUrl: item.product.imageUrl || '/placeholder-product.jpg',
-            category: item.product.category
+            category: item.product.category,
+            brand: (item.product as any).brand
           },
           maxQuantity: item.availableStock || 100,
         }));
@@ -199,7 +201,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
                   price: productInfo.price || 0,
                   mrp: productInfo.mrp,
                   imageUrl: productInfo.imageUrl || '/placeholder-product.jpg',
-                  category: productInfo.category || 'Unknown'
+                  category: productInfo.category || 'Unknown',
+                  brand: (productInfo as any).brand
                 },
                 maxQuantity: 100, // Default stock for guest users
               };
@@ -237,7 +240,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
                   // Normalize category to an object to improve UI consistency
                   category: typeof productDetails.category === 'string'
                     ? { name: productDetails.category, slug: productDetails.category }
-                    : productDetails.category
+                    : productDetails.category,
+                  brand: (productDetails as any).brand
                 },
                 maxQuantity: 100, // Default stock for guest users
               };

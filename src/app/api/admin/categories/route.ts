@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { validateAdminRole } from '@/lib/auth-utils';
+import { getUserFromRequest, validateAdminRole } from '@/lib/auth-utils';
 
 export async function GET(request: NextRequest) {
   try {
-    // Validate admin authentication
-    const user = await validateAdminRole(request);
-    if (!user) {
+    // Validate session and admin role
+    const sessionUser = await getUserFromRequest(request);
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const isAdmin = await validateAdminRole(sessionUser.userId);
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -37,10 +41,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate admin authentication
-    const user = await validateAdminRole(request);
-    if (!user) {
+    // Validate session and admin role
+    const sessionUser = await getUserFromRequest(request);
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const isAdmin = await validateAdminRole(sessionUser.userId);
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const body = await request.json();

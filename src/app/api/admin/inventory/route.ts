@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by stock status if specified
     if (stockStatus) {
-      products = products.filter((product) => {
+      products = products.filter((product: { inventory: { quantity: number; reservedQuantity: number; lowStockThreshold: number } | null }) => {
         if (!product.inventory) return false;
         
         const availableStock = product.inventory.quantity - product.inventory.reservedQuantity;
@@ -126,21 +126,21 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const activeInventory = allInventory.filter(inv => inv.product.isActive);
+    const activeInventory = allInventory.filter((inv: { product: { isActive: boolean } }) => inv.product.isActive);
     
     const lowStockCount = activeInventory.filter(
-      inv => {
+      (inv: { quantity: number; reservedQuantity: number; lowStockThreshold: number }) => {
         const available = inv.quantity - inv.reservedQuantity;
         return available > 0 && available <= inv.lowStockThreshold;
       }
     ).length;
 
     const outOfStockCount = activeInventory.filter(
-      inv => (inv.quantity - inv.reservedQuantity) <= 0
+      (inv: { quantity: number; reservedQuantity: number }) => (inv.quantity - inv.reservedQuantity) <= 0
     ).length;
 
     // Format products with calculated stock status
-    const formattedProducts = products.map((product) => {
+    const formattedProducts = products.map((product: { id: string; name: string; sku: string; price: number; category: { id: string; name: string | null } | null; inventory: { id: string; quantity: number; reservedQuantity: number; lowStockThreshold: number; updatedAt: Date } | null }) => {
       const inventory = product.inventory;
       const availableStock = inventory ? inventory.quantity - inventory.reservedQuantity : 0;
       
@@ -342,7 +342,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (products.length !== productIds.length) {
-      const foundIds = products.map(p => p.id);
+      const foundIds = products.map((p: { id: string }) => p.id);
       const missingIds = productIds.filter(id => !foundIds.includes(id));
       return NextResponse.json(
         { error: `Products not found: ${missingIds.join(', ')}` },
@@ -352,7 +352,7 @@ export async function POST(request: NextRequest) {
 
     // Validate reserved quantities
     for (const update of updates) {
-      const product = products.find(p => p.id === update.productId);
+      const product = products.find((p: { id: string; name?: string; inventory?: { reservedQuantity?: number } | null }) => p.id === update.productId);
       const finalReservedQuantity = update.reservedQuantity ?? product?.inventory?.reservedQuantity ?? 0;
       
       if (finalReservedQuantity > update.quantity) {
@@ -368,7 +368,7 @@ export async function POST(request: NextRequest) {
     // Perform bulk update in transaction
     const results = await prisma.$transaction(
       updates.map(update => {
-        const product = products.find(p => p.id === update.productId);
+        const product = products.find((p: { id: string; inventory?: { reservedQuantity?: number } | null }) => p.id === update.productId);
         const finalReservedQuantity = update.reservedQuantity ?? product?.inventory?.reservedQuantity ?? 0;
         
         return prisma.inventory.upsert({

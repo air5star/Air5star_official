@@ -115,16 +115,19 @@ const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   
   // Handle add to cart
   const handleAddToCart = (product: RecommendationItem) => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      mrp: product.mrp,
-      imageUrl: product.imageUrl,
-      category: product.category,
-      quantity: 1
-    });
-    
+    addToCart(
+      product.id,
+      1,
+      {
+        name: product.name,
+        price: product.price,
+        mrp: product.mrp,
+        imageUrl: product.imageUrl,
+        category: product.category,
+        brand: product.brand,
+      }
+    );
+
     trackInteraction(product.id, 'add_to_cart');
   };
   

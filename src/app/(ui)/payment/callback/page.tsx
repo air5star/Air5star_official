@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
-const PaymentCallbackPage = () => {
+const CallbackContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
@@ -100,5 +100,11 @@ const PaymentCallbackPage = () => {
     </div>
   );
 };
+
+const PaymentCallbackPage = () => (
+  <Suspense fallback={<div className="container mx-auto px-4 py-8">Loading payment callback…</div>}>
+    <CallbackContent />
+  </Suspense>
+);
 
 export default PaymentCallbackPage;

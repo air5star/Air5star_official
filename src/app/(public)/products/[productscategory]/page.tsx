@@ -9,24 +9,24 @@ import ProductItem from '@/components/ProductItem';
 type ProductType = {
   id: string | number;
   category: string;
-  subCategory: string;
+  subCategory?: string;
   brand: string;
   productTitle: string;
   description: string;
   mrp: number;
   price: number;
-  gst: number;
-  grossVolume: string;
-  energyRating: string;
-  swing: string;
-  inverter_non_inverter: string;
-  model: string;
+  gst?: number;
+  grossVolume?: string;
+  energyRating?: string;
+  swing?: string;
+  inverter_non_inverter?: string;
+  model?: string;
   imageUrl: string;
   thumbnail_images: {
-    thumbnail1: string;
-    thumbnail2: string;
-    thumbnail3: string;
-    thumbnail4: string;
+    thumbnail1?: string;
+    thumbnail2?: string;
+    thumbnail3?: string;
+    thumbnail4?: string;
   };
 };
 

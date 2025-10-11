@@ -55,7 +55,7 @@ const convertToTProduct = (product: ProductType): TProduct => {
   };
 };
 
-const ProductsPage = () => {
+const ProductsContent = () => {
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
   const [allProducts, setAllProducts] = useState<ProductType[]>([]);
@@ -105,9 +105,9 @@ const ProductsPage = () => {
       if (isAuthenticated) {
         try {
           const response = await productsAPI.getAll();
-          if (response.success && response.data) {
+          if (response.data) {
             // Convert API response to our ProductType format
-            const apiProducts = response.data.map((product: any) => ({
+            const apiProducts = (response.data as any[]).map((product: any) => ({
               id: product.id,
               category: product.category,
               subCategory: product.subCategory,
@@ -140,11 +140,11 @@ const ProductsPage = () => {
           // Add some sample values for sorting features if they don't exist
           const enhancedProducts = category.products.map((product, index) => ({
             ...product,
-            rating: product.rating || Math.floor(Math.random() * 5) + 1,
-            reviews: product.reviews || Math.floor(Math.random() * 100),
-            bestSeller: product.bestSeller || index % 5 === 0,
-            featured: product.featured || index % 7 === 0,
-            deals: product.deals || index % 4 === 0,
+            rating: (product as any).rating || Math.floor(Math.random() * 5) + 1,
+            reviews: (product as any).reviews || Math.floor(Math.random() * 100),
+            bestSeller: (product as any).bestSeller || index % 5 === 0,
+            featured: (product as any).featured || index % 7 === 0,
+            deals: (product as any).deals || index % 4 === 0,
           }));
           products.push(...enhancedProducts);
         }
@@ -490,5 +490,13 @@ const ProductsPage = () => {
     </div>
   );
 };
+
+function ProductsPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 md:py-6 lg:py-8">Loading products…</div>}>
+      <ProductsContent />
+    </Suspense>
+  );
+}
 
 export default ProductsPage;

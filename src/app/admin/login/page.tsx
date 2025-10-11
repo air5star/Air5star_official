@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, Eye, EyeOff, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function AdminLogin() {
+function AdminLoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -162,5 +162,17 @@ export default function AdminLogin() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminLogin() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
+        <div className="text-center text-white">Loading admin login…</div>
+      </div>
+    }>
+      <AdminLoginContent />
+    </Suspense>
   );
 }

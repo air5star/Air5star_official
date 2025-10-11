@@ -10,28 +10,28 @@ export async function GET(request: NextRequest) {
     const includeProducts = searchParams.get('includeProducts') === 'true';
     const isActive = searchParams.get('isActive');
 
-    // Filter categories from static data
-    let categories = productsData.categories;
+    // Filter categories from static data (productsData is an array)
+    let categories = productsData as any[];
     
     if (isActive !== null) {
-      categories = categories.filter(category => 
-        category.isActive === (isActive === 'true')
+      categories = categories.filter((category: any) => 
+        (category.isActive ?? true) === (isActive === 'true')
       );
     }
 
     // Map categories with products and counts
-    const categoriesWithCount = categories.map(category => {
-      const activeProducts = category.products.filter(p => p.isActive);
+    const categoriesWithCount = categories.map((category: any) => {
+      const activeProducts = (category.products || []) as any[];
       
       return {
         ...category,
-        products: includeProducts ? activeProducts.slice(0, 10).map(product => ({
+        products: includeProducts ? activeProducts.slice(0, 10).map((product: any) => ({
           id: product.id,
-          name: product.name,
+          name: product.productTitle || product.name,
           price: product.price,
           mrp: product.mrp,
           imageUrl: product.imageUrl,
-          sku: product.sku,
+          sku: product.sku ?? `SKU_${product.id}`,
         })) : undefined,
         productCount: activeProducts.length,
       };
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const validatedData = categorySchema.parse(body);
 
     // Check if category with same name or slug already exists in static data
-    const existingCategory = productsData.categories.find(category => 
+    const existingCategory = (productsData as any[]).find((category: any) => 
       category.name === validatedData.name || category.slug === validatedData.slug
     );
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     // In a real implementation, you would add the category to static data
     // For now, we'll just return a success response with mock data
     const newCategory = {
-      id: Math.max(...productsData.categories.map(c => c.id)) + 1,
+      id: Date.now().toString(),
       ...validatedData,
       products: [],
       createdAt: new Date().toISOString(),

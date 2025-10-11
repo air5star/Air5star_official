@@ -4,6 +4,19 @@ import { getUserFromRequest } from '@/lib/auth-utils';
 import { productsData } from '@/data';
 import { inMemoryCart } from '@/lib/storage';
 
+// Static product type from productsData with flexible fields
+type StaticProduct = {
+  id: number | string;
+  category: any;
+  name?: string;
+  productTitle?: string;
+  price: number;
+  mrp?: number;
+  imageUrl?: string;
+  image?: string;
+  sku?: string;
+};
+
 const syncCartSchema = z.object({
   guestCartItems: z.array(z.object({
     productId: z.string().min(1, 'Product ID is required'),
@@ -46,10 +59,11 @@ export async function POST(request: NextRequest) {
     for (const guestItem of guestCartItems) {
       try {
         // Find product in static data
-        let product = null;
+        let product: StaticProduct | null = null;
         for (const category of productsData) {
           if (category.products) {
-            product = category.products.find(p => p.id.toString() === guestItem.productId);
+            const found = category.products.find(p => p.id.toString() === guestItem.productId);
+            product = (found as StaticProduct) ?? null;
             if (product) break;
           }
         }
@@ -92,11 +106,11 @@ export async function POST(request: NextRequest) {
             inMemoryCart[user.userId][existingItemIndex] = {
               ...existingItem,
               quantity: finalQuantity,
-              name: product.productTitle || product.name,
+              name: product.productTitle ?? product.name ?? String(product.id),
               price: product.price,
-              mrp: product.mrp || product.price,
-              imageUrl: product.imageUrl || product.image,
-              sku: product.sku || `SKU_${product.id}`,
+              mrp: product.mrp ?? product.price,
+              imageUrl: product.imageUrl ?? product.image ?? '/placeholder-product.jpg',
+              sku: product.sku ?? `SKU_${product.id}`,
               updatedAt: now,
             };
 
@@ -112,11 +126,11 @@ export async function POST(request: NextRequest) {
             inMemoryCart[user.userId][existingItemIndex] = {
               ...existingItem,
               quantity: newQuantity,
-              name: product.productTitle || product.name,
+              name: product.productTitle ?? product.name ?? String(product.id),
               price: product.price,
-              mrp: product.mrp || product.price,
-              imageUrl: product.imageUrl || product.image,
-              sku: product.sku || `SKU_${product.id}`,
+              mrp: product.mrp ?? product.price,
+              imageUrl: product.imageUrl ?? product.image ?? '/placeholder-product.jpg',
+              sku: product.sku ?? `SKU_${product.id}`,
               updatedAt: now,
             };
 
@@ -133,11 +147,11 @@ export async function POST(request: NextRequest) {
           const newItem = {
             productId: guestItem.productId,
             quantity: guestItem.quantity,
-            name: product.productTitle || product.name,
+            name: product.productTitle ?? product.name ?? String(product.id),
             price: product.price,
-            mrp: product.mrp || product.price,
-            imageUrl: product.imageUrl || product.image,
-            sku: product.sku || `SKU_${product.id}`,
+            mrp: product.mrp ?? product.price,
+            imageUrl: product.imageUrl ?? product.image ?? '/placeholder-product.jpg',
+            sku: product.sku ?? `SKU_${product.id}`,
             createdAt: now,
             updatedAt: now,
           };
@@ -163,20 +177,24 @@ export async function POST(request: NextRequest) {
     const cartItems = inMemoryCart[user.userId] || [];
 
     // Map cart items with static product data for summary calculation
-    const cartItemsWithProducts = cartItems.map((item) => {
+    const cartItemsWithProducts = cartItems.map((item): { quantity: number; product: StaticProduct } | null => {
       // Find product in static data
-      let product = null;
+      let product: StaticProduct | null = null;
       for (const category of productsData) {
         if (category.products) {
-          product = category.products.find(p => p.id.toString() === item.productId);
+          const found = category.products.find(p => p.id.toString() === item.productId);
+          product = (found as StaticProduct) ?? null;
           if (product) break;
         }
       }
-      return product ? { ...item, product } : null;
-    }).filter(Boolean);
+      return product ? { quantity: item.quantity, product } : null;
+    }).filter((i): i is { quantity: number; product: StaticProduct } => i !== null);
 
     const cartSummary = cartItemsWithProducts.reduce(
-      (acc, item) => {
+      (
+        acc: { totalItems: number; totalAmount: number; totalMrp: number; totalSavings: number },
+        item: { quantity: number; product: StaticProduct }
+      ) => {
         const itemTotal = item.product.price * item.quantity;
         const itemMrpTotal = (item.product.mrp || item.product.price) * item.quantity;
         

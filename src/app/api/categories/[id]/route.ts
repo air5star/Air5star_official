@@ -25,8 +25,8 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '12');
     const skip = (page - 1) * limit;
 
-    // Find category in static data
-    const category = productsData.categories.find(c => c.id === categoryId);
+    // Find category in static data (productsData is an array)
+    const category = productsData.find((c: any) => c.id === categoryId);
 
     if (!category) {
       return NextResponse.json(
@@ -35,16 +35,15 @@ export async function GET(
       );
     }
 
-    const activeProducts = category.products.filter(p => p.isActive);
+    // Static data does not track isActive; treat all as active
+    const activeProducts = (category.products || []) as any[];
     let productsWithRatings = [];
     let totalProducts = activeProducts.length;
     let totalPages = Math.ceil(totalProducts / limit);
 
     if (includeProducts) {
       // Get paginated products
-      const paginatedProducts = activeProducts
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(skip, skip + limit);
+      const paginatedProducts = activeProducts.slice(skip, skip + limit);
 
       // Add ratings and stock info
       productsWithRatings = paginatedProducts.map(product => {
@@ -56,7 +55,7 @@ export async function GET(
             stockQuantity: stock,
             reservedQuantity: 0,
           },
-          averageRating: product.rating || 0,
+          averageRating: (product as any).rating || 0,
           reviewCount: 0, // No reviews in static data
           inStock: stock > 0,
           availableStock: stock,
@@ -127,7 +126,7 @@ export async function PUT(
     const validatedData = categorySchema.partial().parse(body);
 
     // Check if category exists in static data
-    const existingCategory = productsData.categories.find(c => c.id === categoryId);
+    const existingCategory = productsData.find((c: any) => c.id === categoryId);
 
     if (!existingCategory) {
       return NextResponse.json(
@@ -138,7 +137,7 @@ export async function PUT(
 
     // Check if name or slug conflicts with other categories
     if (validatedData.name || validatedData.slug) {
-      const conflictingCategory = productsData.categories.find(category => 
+      const conflictingCategory = productsData.find((category: any) => 
         category.id !== categoryId && 
         (category.name === validatedData.name || category.slug === validatedData.slug)
       );
@@ -159,7 +158,7 @@ export async function PUT(
       updatedAt: new Date().toISOString(),
     };
 
-    const activeProducts = existingCategory.products.filter(p => p.isActive);
+    const activeProducts = (existingCategory.products || []) as any[];
 
     return NextResponse.json({
       message: 'Category updated successfully',
@@ -210,7 +209,7 @@ export async function DELETE(
     }
 
     // Check if category exists in static data
-    const existingCategory = productsData.categories.find(c => c.id === categoryId);
+    const existingCategory = productsData.find((c: any) => c.id === categoryId);
 
     if (!existingCategory) {
       return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { getUserFromRequest, generateOrderNumber } from '@/lib/auth-utils';
 import { createOrderSchema } from '@/lib/validations';
 
@@ -73,8 +74,8 @@ export async function POST(request: NextRequest) {
     // Validate stock and calculate totals
     let subtotal = 0;
     let totalMrp = 0;
-    const orderItems = [];
-    const stockIssues = [];
+    const orderItems: { productId: string; quantity: number; price: number; mrp: number; subtotal: number }[] = [];
+    const stockIssues: { productId: string; productName: string; issue: string; availableStock?: number; requestedQuantity?: number }[] = [];
 
     for (const cartItem of cartItems) {
       const product = cartItem.product;
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
     const orderNumber = generateOrderNumber();
 
     // Create order in transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create the order
       const order = await tx.order.create({
         data: {

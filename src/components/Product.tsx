@@ -17,16 +17,19 @@ const Product: React.FC<{ product: TProduct }> = ({ product }) => {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigation to product page
     e.stopPropagation(); // Stop event bubbling
-    
-    addToCart({
-      id: String(product.id),
-      name: product.name,
-      imageUrl: product.imageUrl,
-      category: product.category,
-      price: product.price,
-      quantity: 1
-    });
-    
+
+    addToCart(
+      String(product.id),
+      1,
+      {
+        name: product.name,
+        imageUrl: product.imageUrl,
+        category: product.category,
+        price: product.price,
+        brand: (product as any).brand,
+      }
+    );
+
     // Optional: Show a confirmation message
     alert(`${product.name} added to cart!`);
   };

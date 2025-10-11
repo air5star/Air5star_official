@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Group settings by category
-    const groupedSettings = settings.reduce((acc, setting) => {
+    const groupedSettings = settings.reduce((acc: Record<string, typeof settings>, setting: typeof settings[number]) => {
       const category = setting.category || 'general';
       if (!acc[category]) {
         acc[category] = [];
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       settings: groupedSettings,
-      categories: categories.map(c => c.category).filter(Boolean),
+      categories: categories.map((c: { category: string | null }) => c.category).filter(Boolean),
       total: settings.length,
     });
   } catch (error) {

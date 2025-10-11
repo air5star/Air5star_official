@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { emiCalculationSchema } from '@/lib/validations';
+import { z } from 'zod';
 import { calculateEMI } from '@/lib/auth-utils';
 
 // POST /api/emi/calculate - Calculate EMI for given amount and plan
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = emiCalculationSchema.parse(body);
-    const { amount, emiPlanId, tenure, interestRate } = validatedData;
+    const requestSchema = z.object({
+      amount: z.number().positive('Amount must be positive'),
+      emiPlanId: z.string().optional(),
+      tenure: z.number().int().positive('Tenure must be positive').optional(),
+      interestRate: z.number().min(0, 'Interest rate must be non-negative').optional(),
+    });
+    const { amount, emiPlanId, tenure, interestRate } = requestSchema.parse(body);
 
     let emiPlan = null;
-    let finalTenure = tenure;
-    let finalInterestRate = interestRate;
+    let finalTenure: number = tenure ?? 0;
+    let finalInterestRate: number = interestRate ?? 0;
 
     // If EMI plan ID is provided, fetch the plan details
     if (emiPlanId) {
@@ -48,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Validate tenure and interest rate if not using EMI plan
     if (!emiPlanId) {
-      if (!tenure || !interestRate === undefined) {
+      if (tenure === undefined || interestRate === undefined) {
         return NextResponse.json(
           { error: 'Tenure and interest rate are required when not using an EMI plan' },
           { status: 400 }
@@ -71,7 +76,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate EMI
-    const emiCalculation = calculateEMI(amount, finalInterestRate, finalTenure);
+    const monthlyEmi = calculateEMI(amount, finalInterestRate, finalTenure);
+    const totalAmount = monthlyEmi * finalTenure;
+    const totalInterest = totalAmount - amount;
 
     // Create detailed breakdown
     const breakdown = [];
@@ -79,12 +86,12 @@ export async function POST(request: NextRequest) {
     
     for (let month = 1; month <= finalTenure; month++) {
       const interestComponent = Math.round((remainingPrincipal * finalInterestRate) / 100 / 12);
-      const principalComponent = emiCalculation.monthlyEmi - interestComponent;
+      const principalComponent = monthlyEmi - interestComponent;
       remainingPrincipal -= principalComponent;
 
       breakdown.push({
         month,
-        emi: emiCalculation.monthlyEmi,
+        emi: monthlyEmi,
         principal: principalComponent,
         interest: interestComponent,
         remainingPrincipal: Math.max(0, remainingPrincipal),
@@ -94,9 +101,9 @@ export async function POST(request: NextRequest) {
     const response = {
       calculation: {
         principalAmount: amount,
-        monthlyEmi: emiCalculation.monthlyEmi,
-        totalAmount: emiCalculation.totalAmount,
-        totalInterest: emiCalculation.totalInterest,
+        monthlyEmi,
+        totalAmount,
+        totalInterest,
         tenure: finalTenure,
         interestRate: finalInterestRate,
         processingFee: Math.round(amount * 0.02), // 2% processing fee
@@ -112,9 +119,9 @@ export async function POST(request: NextRequest) {
       breakdown: breakdown.slice(0, 12), // Show first 12 months
       summary: {
         totalMonths: finalTenure,
-        totalPayable: emiCalculation.totalAmount,
-        totalInterest: emiCalculation.totalInterest,
-        monthlySavings: Math.round((amount - emiCalculation.monthlyEmi) / finalTenure),
+        totalPayable: totalAmount,
+        totalInterest: totalInterest,
+        monthlySavings: Math.round((amount - monthlyEmi) / finalTenure),
       },
     };
 

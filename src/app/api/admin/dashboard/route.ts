@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
       : 0;
 
     // Format recent orders for frontend
-    const formattedRecentOrders = recentOrders.map(order => ({
+    const formattedRecentOrders = recentOrders.map((order: { id: string; orderNumber: string; totalAmount: number; status: string; createdAt: Date; user?: { name: string | null; email: string | null } | null }) => ({
       id: order.id,
       orderNumber: order.orderNumber,
       customerName: order.user?.name || 'Unknown',
@@ -157,14 +157,14 @@ export async function GET(request: NextRequest) {
         revenueGrowth: Math.round(revenueGrowth * 100) / 100
       },
       recentOrders: formattedRecentOrders,
-      recentUsers: recentUsers.map(user => ({
+      recentUsers: recentUsers.map((user: { id: string; name: string | null; email: string | null; createdAt: Date; isActive: boolean }) => ({
         id: user.id,
         name: user.name,
         email: user.email,
         joinDate: user.createdAt.toISOString().split('T')[0],
         isActive: user.isActive
       })),
-      recentProducts: recentProducts.map(product => ({
+      recentProducts: recentProducts.map((product: { id: string; name: string; price: number; createdAt: Date; isActive: boolean; category?: { name: string | null } | null }) => ({
         id: product.id,
         name: product.name,
         price: product.price,

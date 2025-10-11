@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { validateAdminRole } from '@/lib/auth-utils';
+import { getUserFromRequest, validateAdminRole } from '@/lib/auth-utils';
+import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
   try {
-    // Validate admin authentication
-    const user = await validateAdminRole(request);
-    if (!user) {
+    // Validate session and admin role
+    const sessionUser = await getUserFromRequest(request);
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const isAdmin = await validateAdminRole(sessionUser.userId);
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -92,9 +97,8 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if user is admin
-    const dbUser = inMemoryUsers.find(u => u.userId === user.userId && u.isActive !== false);
-
-    if (!dbUser || dbUser.role !== 'admin') {
+    const isAdmin = await validateAdminRole(user.userId);
+    if (!isAdmin) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -102,6 +106,10 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
+    const updateUserRoleSchema = z.object({
+      userId: z.string().min(1, 'User ID is required'),
+      role: z.enum(['USER', 'ADMIN'])
+    });
     const validatedData = updateUserRoleSchema.parse(body);
     const { userId, role } = validatedData;
 
@@ -113,29 +121,33 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Find target user in memory
-    const targetUserIndex = inMemoryUsers.findIndex(u => u.userId === userId);
-
-    if (targetUserIndex === -1) {
+    // Ensure target user exists
+    const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!targetUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    // Update user role
-    inMemoryUsers[targetUserIndex] = {
-      ...inMemoryUsers[targetUserIndex],
-      role,
-      updatedAt: new Date().toISOString(),
-    };
-
-    const updatedUser = inMemoryUsers[targetUserIndex];
-    const { password: _, ...userWithoutPassword } = updatedUser;
+    // Update user role in DB
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     return NextResponse.json({
       message: `User role updated to ${role} successfully`,
-      user: userWithoutPassword,
+      user: updatedUser,
     });
   } catch (error) {
     console.error('Error updating user role:', error);
@@ -158,9 +170,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if user is admin
-    const dbUser = inMemoryUsers.find(u => u.userId === user.userId && u.isActive !== false);
-
-    if (!dbUser || dbUser.role !== 'admin') {
+    const isAdmin = await validateAdminRole(user.userId);
+    if (!isAdmin) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -185,43 +196,44 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Find target user in memory
-    const targetUserIndex = inMemoryUsers.findIndex(u => u.userId === userId);
-
-    if (targetUserIndex === -1) {
+    // Ensure target user exists
+    const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!targetUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    const targetUser = inMemoryUsers[targetUserIndex];
-
     // Check if user has active orders
-    const userOrders = inMemoryOrders[userId] || [];
-    const activeOrders = userOrders.filter(order => 
-      ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY'].includes(order.status)
-    );
+    const ACTIVE_ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY'];
+    const activeOrdersCount = await prisma.order.count({
+      where: {
+        userId,
+        status: { in: ACTIVE_ORDER_STATUSES },
+      },
+    });
 
-    if (activeOrders.length > 0) {
+    if (activeOrdersCount > 0) {
       return NextResponse.json(
         {
           error: 'Cannot delete user with active orders',
-          activeOrders: activeOrders.length,
+          activeOrders: activeOrdersCount,
         },
         { status: 400 }
       );
     }
 
-    // Soft delete by deactivating the user
-    inMemoryUsers[targetUserIndex] = {
-      ...targetUser,
-      isActive: false,
-      email: `deleted_${Date.now()}_${targetUser.email}`,
-      name: `[DELETED] ${targetUser.name}`,
-      emailVerified: false,
-      updatedAt: new Date().toISOString(),
-    };
+    // Soft delete by deactivating the user and anonymizing sensitive fields
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isActive: false,
+        email: `deleted_${Date.now()}_${targetUser.email}`,
+        name: `[DELETED] ${targetUser.name}`,
+        updatedAt: new Date(),
+      },
+    });
 
     return NextResponse.json({
       message: 'User account deactivated successfully',

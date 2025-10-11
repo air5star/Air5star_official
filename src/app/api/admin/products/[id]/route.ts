@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { validateAdminRole } from '@/lib/auth-utils';
+import { getUserFromRequest, validateAdminRole } from '@/lib/auth-utils';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate admin authentication
-    const user = await validateAdminRole(request);
-    if (!user) {
+    // Validate session and admin role
+    const sessionUser = await getUserFromRequest(request);
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const isAdmin = await validateAdminRole(sessionUser.userId);
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
 
+    const { id } = await params;
     const product = await prisma.product.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         category: {
           select: {
@@ -42,21 +47,26 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate admin authentication
-    const user = await validateAdminRole(request);
-    if (!user) {
+    // Validate session and admin role
+    const sessionUser = await getUserFromRequest(request);
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const isAdmin = await validateAdminRole(sessionUser.userId);
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const body = await request.json();
     const { name, description, price, stock, categoryId, sku, isActive } = body;
 
     // Check if product exists
+    const { id } = await params;
     const existingProduct = await prisma.product.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingProduct) {
@@ -79,7 +89,7 @@ export async function PATCH(
 
     // Update product
     const updatedProduct = await prisma.product.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(description && { description }),
@@ -112,18 +122,23 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate admin authentication
-    const user = await validateAdminRole(request);
-    if (!user) {
+    // Validate session and admin role
+    const sessionUser = await getUserFromRequest(request);
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const isAdmin = await validateAdminRole(sessionUser.userId);
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     // Check if product exists
+    const { id } = await params;
     const existingProduct = await prisma.product.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingProduct) {
@@ -132,13 +147,13 @@ export async function DELETE(
 
     // Check if product is in any orders (optional - you might want to prevent deletion)
     const ordersWithProduct = await prisma.orderItem.findFirst({
-      where: { productId: params.id }
+      where: { productId: id }
     });
 
     if (ordersWithProduct) {
       // Instead of deleting, mark as inactive
       await prisma.product.update({
-        where: { id: params.id },
+        where: { id },
         data: { isActive: false }
       });
 
@@ -149,7 +164,7 @@ export async function DELETE(
 
     // Delete product
     await prisma.product.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json({ message: 'Product deleted successfully' });

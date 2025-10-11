@@ -59,7 +59,7 @@ export async function DELETE(
 }
 
 // Alternative function to remove by product ID
-export function removeByProductId(
+function removeByProductId(
   productId: string,
   userId: string
 ) {

@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
             where: {
               couponId_userId: {
                 couponId: coupon.id,
-                userId: user.id
+                userId: (user as any).id ?? (user as any).sub
               }
             }
           });

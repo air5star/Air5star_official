@@ -2,6 +2,47 @@ import { NextRequest, NextResponse } from 'next/server';
 import { addToCartSchema } from '@/lib/validations';
 import { getUserFromRequest } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
+// Local types to ensure callback parameters are typed
+type ProductData = {
+  id: string;
+  name: string;
+  price: number;
+  mrp?: number | null;
+  imageUrl?: string | null;
+  isActive: boolean;
+  category?: { name: string; slug: string } | null;
+  inventory?: { stockQuantity: number; reservedQuantity: number } | null;
+} | null;
+
+type CartItemWithProduct = {
+  id: string;
+  userId: string;
+  productId: string;
+  quantity: number;
+  createdAt: Date;
+  updatedAt: Date;
+  product: ProductData;
+};
+
+type CartItemResponse = {
+  id: string;
+  userId: string;
+  productId: string;
+  quantity: number;
+  createdAt: Date;
+  updatedAt: Date;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    mrp: number;
+    imageUrl?: string;
+    category: { name: string; slug: string };
+  };
+  availableStock: number;
+  inStock: boolean;
+  maxQuantity: number;
+};
 
 // GET /api/cart - Get user's cart items
 export async function GET(request: NextRequest) {
@@ -24,7 +65,7 @@ export async function GET(request: NextRequest) {
     });
 
     const items = cartItems
-      .map((item) => {
+      .map((item: CartItemWithProduct) => {
         const product = item.product;
         if (!product || !product.isActive) return null;
 
@@ -55,10 +96,13 @@ export async function GET(request: NextRequest) {
           maxQuantity: availableStock,
         };
       })
-      .filter(Boolean) as any[];
+      .filter((i: CartItemResponse | null): i is CartItemResponse => i !== null);
 
     const summary = items.reduce(
-      (acc, item) => {
+      (
+        acc: { totalItems: number; totalAmount: number; totalMrp: number; totalSavings: number },
+        item: CartItemResponse
+      ) => {
         const itemTotal = item.product.price * item.quantity;
         const itemMrpTotal = (item.product.mrp || item.product.price) * item.quantity;
         acc.totalItems += item.quantity;

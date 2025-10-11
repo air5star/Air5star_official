@@ -109,9 +109,7 @@ const WishlistPage = () => {
                           </h3>
                         </Link>
                         <p className="text-sm text-gray-600 mt-1">
-                          {typeof item.product.category === 'string'
-                            ? item.product.category
-                            : item.product.category?.name}
+                          {String(item.product.category)}
                         </p>
                         {item.product.brand && (
                           <p className="text-xs md:text-sm text-gray-500 mt-1">{item.product.brand}</p>

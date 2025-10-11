@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = user.id;
+    const userId = (user as any).id ?? (user as any).sub;
     const now = new Date();
 
     // Get available coupons for the user

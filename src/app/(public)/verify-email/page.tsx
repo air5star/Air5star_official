@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -18,7 +18,7 @@ const verifyEmailSchema = z.object({
 
 type VerifyEmailFormData = z.infer<typeof verifyEmailSchema>;
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState('');
@@ -210,5 +210,22 @@ export default function VerifyEmailPage() {
         </div>
       </Card>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen px-4 py-6 sm:py-8">
+        <Card className="w-full max-w-sm p-4 sm:p-6 md:p-8 shadow-lg md:max-w-md">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading verification…</p>
+          </div>
+        </Card>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

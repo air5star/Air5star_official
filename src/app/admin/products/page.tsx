@@ -173,7 +173,7 @@ export default function ProductsPage() {
     { id: '6', name: 'Ventilation' }
   ];
 
-  const mockProducts = [
+  const mockProducts: Product[] = [
     {
       id: '1',
       name: 'Carrier 1.5 Ton 3 Star Split AC',

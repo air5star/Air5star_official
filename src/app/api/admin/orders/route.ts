@@ -2,7 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromRequest } from '@/lib/auth-utils';
 import { z } from 'zod';
-import { OrderStatus } from '@prisma/client';
+const ORDER_STATUSES = [
+  'PENDING',
+  'CONFIRMED',
+  'PROCESSING',
+  'SHIPPED',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+  'CANCELLED',
+  'RETURNED',
+  'REFUNDED',
+] as const;
+type OrderStatus = typeof ORDER_STATUSES[number];
 
 const updateOrderStatusSchema = z.object({
   orderId: z.string().min(1, 'Order ID is required'),
@@ -58,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Build where clause
     const where: any = {};
 
-    if (status && Object.values(OrderStatus).includes(status)) {
+    if (status && ORDER_STATUSES.includes(status as OrderStatus)) {
       where.status = status;
     }
 
@@ -174,7 +185,20 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Format orders with calculated data
-    const formattedOrders = orders.map((order) => {
+    const formattedOrders = orders.map((order: {
+      id: string;
+      orderNumber: string;
+      status: OrderStatus | string;
+      totalAmount: number;
+      createdAt: Date;
+      updatedAt: Date;
+      user: { id: string; name: string | null; email: string | null; phone: string | null } | null;
+      shippingAddress: any;
+      payments: Array<{ id: string; method: string; status: string; amount: number; transactionId: string | null }>;
+      emiPlan: { id: string; name: string; tenure: number; interestRate: number } | null;
+      orderItems: Array<{ id: string; quantity: number; price: number; product: { id: string; name: string; sku: string; image: string | null } }>;
+      orderTracking: Array<{ status: string; location: string | null; notes: string | null; createdAt: Date }>;
+    }) => {
       const itemCount = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
       const latestTracking = order.orderTracking[0];
       
@@ -196,7 +220,7 @@ export async function GET(request: NextRequest) {
           notes: latestTracking.notes,
           createdAt: latestTracking.createdAt,
         } : null,
-        items: order.orderItems.map(item => ({
+        items: order.orderItems.map((item: { id: string; quantity: number; price: number; product: { id: string; name: string; sku: string; image: string | null } }) => ({
           id: item.id,
           quantity: item.quantity,
           price: item.price,
@@ -307,11 +331,13 @@ export async function PUT(request: NextRequest) {
       REFUNDED: [],
     };
 
-    if (!validTransitions[order.status].includes(status)) {
+    const currentStatus = order.status as OrderStatus;
+    const nextStatus = status as OrderStatus;
+    if (!validTransitions[currentStatus].includes(nextStatus)) {
       return NextResponse.json(
         {
-          error: `Invalid status transition from ${order.status} to ${status}`,
-          validTransitions: validTransitions[order.status],
+          error: `Invalid status transition from ${currentStatus} to ${nextStatus}`,
+          validTransitions: validTransitions[currentStatus],
         },
         { status: 400 }
       );
@@ -497,7 +523,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Release reserved inventory and update order status
-    const inventoryUpdates = order.orderItems.map((item) => {
+    const inventoryUpdates = order.orderItems.map((item: { productId: string; quantity: number; product: { inventory: any } }) => {
       if (item.product.inventory) {
         return prisma.inventory.update({
           where: { productId: item.productId },

@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
 
 // Helper functions for analytics
 async function getSalesData(dateFilter: any) {
-  const orders = await prisma.order.findMany({
+  const orders: Array<{ totalAmount: number; createdAt: Date; status: string }> = await prisma.order.findMany({
     where: {
       createdAt: dateFilter,
       status: {
@@ -123,7 +123,7 @@ async function getSalesData(dateFilter: any) {
   // Group by date
   const dailySales: Record<string, { date: string; revenue: number; orders: number }> = {};
   
-  orders.forEach(order => {
+  orders.forEach((order: { totalAmount: number; createdAt: Date; status: string }) => {
     const date = order.createdAt.toISOString().split('T')[0];
     if (!dailySales[date]) {
       dailySales[date] = { date, revenue: 0, orders: 0 };
@@ -159,7 +159,7 @@ async function getOrderStatistics(dateFilter: any) {
 
   return {
     total: totalOrders,
-    byStatus: ordersByStatus.reduce((acc, item) => {
+    byStatus: ordersByStatus.reduce((acc: Record<string, number>, item: { status: string; _count: { id: number } }) => {
       acc[item.status] = item._count.id;
       return acc;
     }, {} as Record<string, number>),
@@ -208,14 +208,14 @@ async function getProductStatistics(dateFilter: any) {
   ]);
 
   // Get product details for top selling
-  const productIds = topSellingProducts.map(item => item.productId);
+  const productIds = topSellingProducts.map((item: { productId: string }) => item.productId);
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
     select: { id: true, name: true, sku: true, price: true, image: true },
   });
 
-  const topSellingWithDetails = topSellingProducts.map(item => {
-    const product = products.find(p => p.id === item.productId);
+  const topSellingWithDetails = topSellingProducts.map((item: { productId: string; _sum: { quantity: number | null }; _count: { id: number } }) => {
+    const product = products.find((p: { id: string; name: string; sku: string; price: number | null; image: string | null }) => p.id === item.productId);
     return {
       product,
       quantitySold: item._sum.quantity || 0,
@@ -227,7 +227,7 @@ async function getProductStatistics(dateFilter: any) {
   return {
     total: totalProducts,
     topSelling: topSellingWithDetails,
-    lowStock: lowStockProducts.map(item => ({
+    lowStock: lowStockProducts.map((item: { product: { id: string; name: string; sku: string }; quantity: number; reservedQuantity: number; lowStockThreshold: number }) => ({
       product: item.product,
       currentStock: item.quantity,
       reservedStock: item.reservedQuantity,
@@ -282,15 +282,15 @@ async function getUserStatistics(dateFilter: any) {
 
   // Calculate top customers by total spent
   const customersWithSpending = topCustomers
-    .map(user => ({
+    .map((user: { id: string; name: string | null; email: string | null; _count: { orders: number }; orders: Array<{ totalAmount: number }> }) => ({
       id: user.id,
       name: user.name,
       email: user.email,
       orderCount: user._count.orders,
-      totalSpent: user.orders.reduce((sum, order) => sum + order.totalAmount, 0),
+      totalSpent: user.orders.reduce((sum: number, order: { totalAmount: number }) => sum + order.totalAmount, 0),
     }))
-    .filter(customer => customer.totalSpent > 0)
-    .sort((a, b) => b.totalSpent - a.totalSpent)
+    .filter((customer: { totalSpent: number }) => customer.totalSpent > 0)
+    .sort((a: { totalSpent: number }, b: { totalSpent: number }) => b.totalSpent - a.totalSpent)
     .slice(0, 10);
 
   return {
@@ -331,7 +331,7 @@ async function getRevenueAnalytics(dateFilter: any) {
 
   return {
     total: totalRevenue._sum.totalAmount || 0,
-    byPaymentMethod: revenueByPaymentMethod.reduce((acc, item) => {
+    byPaymentMethod: revenueByPaymentMethod.reduce((acc: Record<string, { revenue: number; count: number }>, item: { method: string; _sum: { amount: number | null }; _count: { id: number } }) => {
       acc[item.method] = {
         revenue: item._sum.amount || 0,
         count: item._count.id,
@@ -362,13 +362,13 @@ async function getCategoryPerformance(dateFilter: any) {
     },
   });
 
-  return categoryStats.map(category => {
+  return categoryStats.map((category: { id: string; name: string; products: Array<{ orderItems: Array<{ quantity: number; price: number }> }> }) => {
     const totalQuantity = category.products.reduce(
-      (sum, product) => sum + product.orderItems.reduce((pSum, item) => pSum + item.quantity, 0),
+      (sum: number, product: { orderItems: Array<{ quantity: number; price: number }> }) => sum + product.orderItems.reduce((pSum: number, item: { quantity: number; price: number }) => pSum + item.quantity, 0),
       0
     );
     const totalRevenue = category.products.reduce(
-      (sum, product) => sum + product.orderItems.reduce((pSum, item) => pSum + item.price * item.quantity, 0),
+      (sum: number, product: { orderItems: Array<{ quantity: number; price: number }> }) => sum + product.orderItems.reduce((pSum: number, item: { quantity: number; price: number }) => pSum + item.price * item.quantity, 0),
       0
     );
     const productCount = category.products.length;
@@ -381,7 +381,7 @@ async function getCategoryPerformance(dateFilter: any) {
       totalRevenue,
       averageRevenuePerProduct: productCount > 0 ? totalRevenue / productCount : 0,
     };
-  }).sort((a, b) => b.totalRevenue - a.totalRevenue);
+  }).sort((a: { totalRevenue: number }, b: { totalRevenue: number }) => b.totalRevenue - a.totalRevenue);
 }
 
 async function getPaymentMethodStats(dateFilter: any) {
@@ -423,14 +423,14 @@ async function getEMIStatistics(dateFilter: any) {
     }),
   ]);
 
-  const totalEMIRevenue = emiOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalEMIRevenue = emiOrders.reduce((sum: number, order: { totalAmount: number }) => sum + order.totalAmount, 0);
   const avgEMIOrderValue = emiOrders.length > 0 ? totalEMIRevenue / emiOrders.length : 0;
 
   return {
     totalEMIOrders: emiOrders.length,
     totalEMIRevenue,
     averageEMIOrderValue: avgEMIOrderValue,
-    planUsage: emiPlans.map(plan => ({
+    planUsage: emiPlans.map((plan: { id: string; name: string; tenure: number; interestRate: number; _count: { orders: number } }) => ({
       id: plan.id,
       name: plan.name,
       tenure: plan.tenure,
@@ -441,7 +441,7 @@ async function getEMIStatistics(dateFilter: any) {
 }
 
 async function getGeographicalDistribution(dateFilter: any) {
-  const orders = await prisma.order.findMany({
+  const orders: Array<{ totalAmount: number; shippingAddress: { state?: string | null; city?: string | null } | null }> = await prisma.order.findMany({
     where: {
       createdAt: dateFilter,
     },
@@ -453,7 +453,7 @@ async function getGeographicalDistribution(dateFilter: any) {
   const stateDistribution: Record<string, { orders: number; revenue: number }> = {};
   const cityDistribution: Record<string, { orders: number; revenue: number }> = {};
 
-  orders.forEach(order => {
+  orders.forEach((order: { totalAmount: number; shippingAddress: { state?: string | null; city?: string | null } | null }) => {
     const state = order.shippingAddress?.state || 'Unknown';
     const city = order.shippingAddress?.city || 'Unknown';
 
@@ -499,11 +499,11 @@ async function getCustomerLTVData() {
   });
 
   const ltvData = users
-    .map(user => {
-      const totalSpent = user.orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    .map((user: { id: string; orders: Array<{ totalAmount: number; createdAt: Date }> }) => {
+      const totalSpent = user.orders.reduce((sum: number, order: { totalAmount: number }) => sum + order.totalAmount, 0);
       const orderCount = user.orders.length;
       const firstOrderDate = user.orders.length > 0 
-        ? Math.min(...user.orders.map(o => o.createdAt.getTime()))
+        ? Math.min(...user.orders.map((o: { createdAt: Date }) => o.createdAt.getTime()))
         : null;
       const daysSinceFirstOrder = firstOrderDate 
         ? Math.floor((Date.now() - firstOrderDate) / (1000 * 60 * 60 * 24))
@@ -520,11 +520,11 @@ async function getCustomerLTVData() {
           : totalSpent,
       };
     })
-    .filter(data => data.totalSpent > 0)
-    .sort((a, b) => b.estimatedLTV - a.estimatedLTV);
+    .filter((data: { totalSpent: number }) => data.totalSpent > 0)
+    .sort((a: { estimatedLTV: number }, b: { estimatedLTV: number }) => b.estimatedLTV - a.estimatedLTV);
 
   const avgLTV = ltvData.length > 0 
-    ? ltvData.reduce((sum, data) => sum + data.estimatedLTV, 0) / ltvData.length
+    ? ltvData.reduce((sum: number, data: { estimatedLTV: number }) => sum + data.estimatedLTV, 0) / ltvData.length
     : 0;
 
   return {
@@ -552,8 +552,8 @@ async function getInventoryTurnover(dateFilter: any) {
     },
   });
 
-  const turnoverData = products.map(product => {
-    const totalSold = product.orderItems.reduce((sum, item) => sum + item.quantity, 0);
+  const turnoverData = products.map((product: { id: string; name: string; sku: string; inventory?: { quantity: number } | null; orderItems: Array<{ quantity: number }> }) => {
+    const totalSold = product.orderItems.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0);
     const currentStock = product.inventory?.quantity || 0;
     const turnoverRate = currentStock > 0 ? totalSold / currentStock : 0;
 
@@ -569,9 +569,9 @@ async function getInventoryTurnover(dateFilter: any) {
   });
 
   return {
-    products: turnoverData.sort((a, b) => b.turnoverRate - a.turnoverRate),
+    products: turnoverData.sort((a: { turnoverRate: number }, b: { turnoverRate: number }) => b.turnoverRate - a.turnoverRate),
     averageTurnoverRate: turnoverData.length > 0 
-      ? turnoverData.reduce((sum, data) => sum + data.turnoverRate, 0) / turnoverData.length
+      ? turnoverData.reduce((sum: number, data: { turnoverRate: number }) => sum + data.turnoverRate, 0) / turnoverData.length
       : 0,
   };
 }

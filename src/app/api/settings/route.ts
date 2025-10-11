@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper function to get a specific setting value
-export async function getSetting(key: string): Promise<string | null> {
+async function getSetting(key: string): Promise<string | null> {
   try {
     const setting = await prisma.setting.findUnique({
       where: { key },
@@ -86,7 +86,7 @@ export async function getSetting(key: string): Promise<string | null> {
 }
 
 // Helper function to get multiple settings
-export async function getSettings(keys: string[]): Promise<Record<string, string>> {
+async function getSettings(keys: string[]): Promise<Record<string, string>> {
   try {
     const settings = await prisma.setting.findMany({
       where: {
@@ -109,7 +109,7 @@ export async function getSettings(keys: string[]): Promise<Record<string, string
 }
 
 // Helper function to get settings by category
-export async function getSettingsByCategory(category: string, includePrivate = false): Promise<Record<string, string>> {
+async function getSettingsByCategory(category: string, includePrivate = false): Promise<Record<string, string>> {
   try {
     const where: any = { category };
     if (!includePrivate) {
@@ -135,7 +135,7 @@ export async function getSettingsByCategory(category: string, includePrivate = f
 }
 
 // Helper function to check if a feature is enabled
-export async function isFeatureEnabled(featureKey: string): Promise<boolean> {
+async function isFeatureEnabled(featureKey: string): Promise<boolean> {
   try {
     const setting = await getSetting(featureKey);
     return setting === 'true';
@@ -146,7 +146,7 @@ export async function isFeatureEnabled(featureKey: string): Promise<boolean> {
 }
 
 // Helper function to get numeric setting with default
-export async function getNumericSetting(key: string, defaultValue: number): Promise<number> {
+async function getNumericSetting(key: string, defaultValue: number): Promise<number> {
   try {
     const setting = await getSetting(key);
     if (!setting) return defaultValue;
@@ -160,7 +160,7 @@ export async function getNumericSetting(key: string, defaultValue: number): Prom
 }
 
 // Helper function to get JSON setting
-export async function getJSONSetting<T>(key: string, defaultValue: T): Promise<T> {
+async function getJSONSetting<T>(key: string, defaultValue: T): Promise<T> {
   try {
     const setting = await getSetting(key);
     if (!setting) return defaultValue;
@@ -173,7 +173,7 @@ export async function getJSONSetting<T>(key: string, defaultValue: T): Promise<T
 }
 
 // Common settings getters for frequently used values
-export const SettingsHelpers = {
+const SettingsHelpers = {
   // Site settings
   getSiteName: () => getSetting('site_name'),
   getSiteDescription: () => getSetting('site_description'),

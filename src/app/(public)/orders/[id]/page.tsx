@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,7 +81,8 @@ interface Order {
   orderTracking: OrderTracking[];
 }
 
-const OrderDetailsPage = ({ params }: { params: { id: string } }) => {
+const OrderDetailsPage = () => {
+  const { id } = useParams() as { id: string };
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -109,7 +110,7 @@ const OrderDetailsPage = ({ params }: { params: { id: string } }) => {
           return;
         }
 
-        const response = await fetch(`/api/orders/${params.id}`, {
+        const response = await fetch(`/api/orders/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -138,7 +139,7 @@ const OrderDetailsPage = ({ params }: { params: { id: string } }) => {
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, params.id, router]);
+  }, [isAuthenticated, id, router]);
 
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');

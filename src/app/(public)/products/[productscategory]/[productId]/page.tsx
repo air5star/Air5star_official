@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import Payment from '@/components/Payment';
 import { useCart } from '@/context/CartContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 import '@/styles/scrollbar.css';
 
@@ -36,15 +36,8 @@ type Product = {
   };
 };
 
-type Props = {
-  params: {
-    productscategory: any;
-    productId: any;
-  };
-};
-
-const ProductIdPage = (props: Props) => {
-  const { productscategory, productId } = props.params;
+const ProductIdPage = () => {
+  const { productscategory, productId } = useParams() as { productscategory: string; productId: string };
   
   const category = productsData.find(
     (cat) => cat.category === productscategory
@@ -283,14 +276,17 @@ const ProductIdPage = (props: Props) => {
                     <button
                       onClick={() => {
                         if (product) {
-                          addToCart({
-                            id: String(product.id),
-                            name: product.productTitle,
-                            imageUrl: images[0] || '/placeholder-product.jpg',
-                            category: category?.category || '',
-                            price: product.price,
-                            quantity: quantity
-                          });
+                          addToCart(
+                            String(product.id),
+                            quantity,
+                            {
+                              name: product.productTitle,
+                              imageUrl: images[0] || '/placeholder-product.jpg',
+                              category: category?.category || '',
+                              price: product.price,
+                              brand: product.brand,
+                            }
+                          );
                           alert('Product added to cart!');
                         }
                       }}
@@ -302,14 +298,17 @@ const ProductIdPage = (props: Props) => {
                     <button
                       onClick={() => {
                         if (product) {
-                          addToCart({
-                            id: String(product.id),
-                            name: product.productTitle,
-                            imageUrl: images[0] || '/placeholder-product.jpg',
-                            category: category?.category || '',
-                            price: product.price,
-                            quantity: quantity
-                          });
+                          addToCart(
+                            String(product.id),
+                            quantity,
+                            {
+                              name: product.productTitle,
+                              imageUrl: images[0] || '/placeholder-product.jpg',
+                              category: category?.category || '',
+                              price: product.price,
+                              brand: product.brand,
+                            }
+                          );
                           router.push('/checkout');
                         }
                       }}

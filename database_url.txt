@@ -1,0 +1,1 @@
+postgresql://appuser:AppUserStrong%232024!@localhost:5432/ecommerce?host=/cloudsql/air5star-ecommerce:asia-south1:air5star-postgres&sslmode=disable

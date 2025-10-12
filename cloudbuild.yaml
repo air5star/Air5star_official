@@ -1,14 +1,7 @@
 timeout: 1800s
 options:
-  logging: CLOUD_LOGGING_ONLY
+  logging: GCS_ONLY
 
-# Fetch secrets from Secret Manager and expose to steps as env vars
-availableSecrets:
-  secretManager:
-    - versionName: projects/$PROJECT_ID/secrets/NEXTAUTH_SECRET/versions/latest
-      env: NEXTAUTH_SECRET
-    - versionName: projects/$PROJECT_ID/secrets/DATABASE_URL/versions/latest
-      env: DATABASE_URL
 
 substitutions:
   _REGION: asia-south1
@@ -21,26 +14,23 @@ steps:
     args:
       - build
       - -t
-      - asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
       - .
 
   - name: gcr.io/cloud-builders/docker
     id: Push image
     args:
       - push
-      - asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
 
   - name: gcr.io/cloud-builders/gcloud
     id: Deploy to Cloud Run
     entrypoint: bash
-    secretEnv:
-      - NEXTAUTH_SECRET
-      - DATABASE_URL
     args:
       - -c
       - |
         gcloud run deploy ${_SERVICE} \
-          --image asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA \
+          --image asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID \
           --region ${_REGION} \
           --allow-unauthenticated \
           --min-instances 1 \
@@ -48,7 +38,7 @@ steps:
           --cpu 1 \
           --memory 1Gi \
           --add-cloudsql-instances air5star-ecommerce:asia-south1:air5star-postgres \
-          --set-env-vars NODE_ENV=production,NEXTAUTH_SECRET=$$NEXTAUTH_SECRET,SEED_DB=true,SEED_SCRIPT=scripts/seed-all-products.js,DATABASE_URL=$$DATABASE_URL
+          --env-vars-file .cloudrun.env
 
 images:
-  - asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+  - asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID

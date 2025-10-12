@@ -93,7 +93,10 @@ export function corsHeaders(request: NextRequest) {
   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
+    'https://air5star.in',
+    'https://www.air5star.in',
     process.env.FRONTEND_URL,
+    process.env.NEXTAUTH_URL,
   ].filter(Boolean);
 
   const response = NextResponse.next();

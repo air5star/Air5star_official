@@ -1,0 +1,5 @@
+name: air5star-http-redirect
+defaultUrlRedirect:
+  redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+  httpsRedirect: true
+  stripQuery: false

@@ -1,6 +1,6 @@
 timeout: 1800s
 options:
-  logging: GCS_ONLY
+  logging: CLOUD_LOGGING_ONLY
 
 
 substitutions:

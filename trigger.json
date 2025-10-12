@@ -1,0 +1,16 @@
+{
+  "createTime": "2025-10-12T11:24:43.663387389Z",
+  "description": "Auto-deploy Air5Star e-commerce to Cloud Run on GitHub push",
+  "filename": "cloudbuild.yaml",
+  "github": {
+    "name": "Air5star_official",
+    "owner": "air5star",
+    "push": {
+      "branch": "^main$"
+    }
+  },
+  "id": "fbb40bc8-5c42-4ec0-adba-4f9744360971",
+  "includeBuildLogs": "INCLUDE_BUILD_LOGS_WITH_STATUS",
+  "name": "air5star-deploy",
+  "resourceName": "projects/air5star-ecommerce/locations/global/triggers/fbb40bc8-5c42-4ec0-adba-4f9744360971"
+}

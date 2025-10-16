@@ -52,8 +52,7 @@ steps:
           --image asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID \
           --region ${_REGION} \
           --set-cloudsql-instances air5star-ecommerce:asia-south1:air5star-postgres \
-          # Escape $ so Cloud Build doesn't treat DB_URL as a substitution key
-          --set-env-vars "DATABASE_URL=$$DB_URL,NODE_ENV=production" \
+          --set-env-vars "DATABASE_URL=$DB_URL,NODE_ENV=production" \
           --command npx \
           --args prisma db push
 

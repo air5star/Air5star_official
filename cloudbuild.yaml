@@ -40,5 +40,29 @@ steps:
           --add-cloudsql-instances air5star-ecommerce:asia-south1:air5star-postgres \
           --env-vars-file .cloudrun.env
 
+  - name: gcr.io/cloud-builders/gcloud
+    id: Create Prisma DB Push Job
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run jobs delete air5star-prisma-push --region ${_REGION} --quiet || true
+        gcloud run jobs create air5star-prisma-push \
+          --image asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID \
+          --region ${_REGION} \
+          --add-cloudsql-instances air5star-ecommerce:asia-south1:air5star-postgres \
+          --env-vars-file .cloudrun.env \
+          --command "npx","prisma","db","push"
+
+  - name: gcr.io/cloud-builders/gcloud
+    id: Execute Prisma DB Push Job
+    args:
+      - run
+      - jobs
+      - execute
+      - air5star-prisma-push
+      - --region
+      - ${_REGION}
+
 images:
   - asia-south1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID

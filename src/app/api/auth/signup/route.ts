@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { hashPassword } from '@/lib/auth-utils';
 import { signupSchema } from '@/lib/validations';
 import { prisma } from '@/lib/prisma';
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Signup error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { 
@@ -141,6 +142,36 @@ export async function POST(request: NextRequest) {
           }))
         },
         { status: 400 }
+      );
+    }
+
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      console.error('Prisma initialization error during signup:', {
+        message: error.message,
+        errorCode: error.errorCode,
+      });
+      return NextResponse.json(
+        { error: 'Database connection failed. Please try again shortly.' },
+        { status: 500 }
+      );
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error('Prisma known request error during signup:', {
+        code: error.code,
+        message: error.message,
+        meta: error.meta,
+      });
+      if (error.code === 'P2002') {
+        // Unique constraint
+        return NextResponse.json(
+          { error: 'Account already exists for provided details' },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json(
+        { error: 'Database operation failed. Please try again.' },
+        { status: 500 }
       );
     }
 

@@ -54,7 +54,7 @@ steps:
           --env-vars-file .cloudrun.env \
           --set-env-vars NODE_ENV=production \
           --command npx \
-          --args prisma db push
+          --args prisma,db,push
 
   - name: gcr.io/cloud-builders/gcloud
     id: Execute Prisma DB Push Job

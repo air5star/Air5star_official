@@ -117,9 +117,20 @@ export async function POST(request: NextRequest) {
 
     // Send verification email
     try {
-      await emailService.sendVerificationEmail(normalizedEmail, normalizedName, otp);
+      const sent = await emailService.sendVerificationEmail(normalizedEmail, normalizedName, otp);
+      if (!sent) {
+        console.error('[Signup] Verification email not sent', {
+          email: normalizedEmail,
+          name: normalizedName,
+          reason: 'sendEmail returned false',
+        });
+      }
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      console.error('[Signup] Failed to send verification email:', {
+        email: normalizedEmail,
+        name: normalizedName,
+        error: (emailError as any)?.message || emailError,
+      });
       // Don't fail the signup if email fails, but log it
     }
 

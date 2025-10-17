@@ -219,9 +219,19 @@ export async function PUT(request: NextRequest) {
 
     // Send new verification email
     try {
-      await emailService.sendVerificationEmail(user.email, user.name, otp);
+      const sent = await emailService.sendVerificationEmail(user.email, user.name, otp);
+      if (!sent) {
+        console.error('[VerifyEmail:Resend] Email send returned false', { email: user.email });
+        return NextResponse.json(
+          { error: 'Failed to send verification email' },
+          { status: 500 }
+        );
+      }
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      console.error('[VerifyEmail:Resend] Failed to send verification email:', {
+        email: user.email,
+        error: (emailError as any)?.message || emailError,
+      });
       return NextResponse.json(
         { error: 'Failed to send verification email' },
         { status: 500 }

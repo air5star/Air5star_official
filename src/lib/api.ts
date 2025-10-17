@@ -302,7 +302,7 @@ export const reviewsAPI = {
 // Payment API functions
 export const paymentAPI = {
   createOrder: async (orderData: any) => {
-    return apiRequest('/api/payments/create-order', {
+    return apiRequest('/api/payments/create', {
       method: 'POST',
       body: JSON.stringify(orderData),
     });

@@ -511,9 +511,21 @@ const CheckoutPage = () => {
         },
       } as any;
 
+      if (!(window as any).Razorpay) {
+        setError('Payment script not loaded. Please retry.');
+        return;
+      }
+      if (!options.key) {
+        console.error('[Checkout] Missing Razorpay key. Set NEXT_PUBLIC_RAZORPAY_KEY_ID.');
+        setError('Payment gateway not configured. Please contact support.');
+        return;
+      }
+
       const razorpay = new (window as any).Razorpay(options);
-      razorpay.on('payment.failed', () => {
-        setError('Payment failed. Please try again or use another method.');
+      razorpay.on('payment.failed', (event: any) => {
+        const desc = event?.error?.description || 'Unknown error';
+        console.error('[Checkout] payment.failed:', event);
+        setError(`Payment failed: ${desc}`);
       });
       razorpay.open();
     } catch (error) {

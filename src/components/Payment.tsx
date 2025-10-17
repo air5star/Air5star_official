@@ -4,11 +4,12 @@ import { useState } from 'react';
 import Script from 'next/script';
 
 interface PaymentProps {
+  orderId: string;
   amount: number;
   currency: string;
 }
 
-const Payment: React.FC<PaymentProps> = ({ amount, currency }) => {
+const Payment: React.FC<PaymentProps> = ({ orderId, amount, currency }) => {
   const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,34 +22,40 @@ const Payment: React.FC<PaymentProps> = ({ amount, currency }) => {
     setIsLoading(true);
 
     try {
-      // Create order
-      const response = await fetch('/api/create-order', {
+      // Create payment/order via unified endpoint
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      const response = await fetch('/api/payments/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, currency }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ orderId, amount, currency, paymentMethod: 'RAZORPAY' }),
       });
 
-      const orderData = await response.json();
-      if (!response.ok)
-        throw new Error(orderData.error || 'Order creation failed');
+      const paymentData = await response.json();
+      if (!response.ok) {
+        throw new Error(paymentData.error || 'Payment initialization failed');
+      }
 
       // Razorpay options
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        amount: orderData.amount,
-        currency: orderData.currency,
+        key: paymentData?.razorpay?.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: paymentData?.razorpay?.amount,
+        currency: paymentData?.razorpay?.currency || currency,
         name: 'Air5Star',
         description: 'Purchase Payment',
-        order_id: orderData.order_id,
+        order_id: paymentData?.razorpay?.orderId,
         handler: async (response: any) => {
-          // Verify payment
-          const verifyResponse = await fetch('/api/verify-payment', {
+          // Verify payment via unified endpoint
+          const verifyResponse = await fetch('/api/payments/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
+              orderId,
             }),
           });
 
@@ -75,8 +82,24 @@ const Payment: React.FC<PaymentProps> = ({ amount, currency }) => {
         },
       };
 
-      // Open Razorpay checkout
+      // Assert script and key are present
+      if (!(window as any).Razorpay) {
+        alert('Payment script not loaded. Please retry.');
+        return;
+      }
+      if (!options.key) {
+        console.error('[Payment Component] Missing Razorpay key. Ensure NEXT_PUBLIC_RAZORPAY_KEY_ID is set.');
+        alert('Payment gateway not configured. Please contact support.');
+        return;
+      }
+
+      // Open Razorpay checkout with hardened failure handler
       const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', (event: any) => {
+        const desc = event?.error?.description || 'Unknown error';
+        console.error('[Payment Component] payment.failed:', event);
+        alert(`Payment failed: ${desc}`);
+      });
       rzp.open();
     } catch (error: any) {
       alert(`Error: ${error.message}`);

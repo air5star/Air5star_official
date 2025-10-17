@@ -42,6 +42,7 @@ interface OrderConfirmationData {
 export class EmailService {
   private transporter: nodemailer.Transporter;
   private fromEmail: string;
+  private fromName: string;
   private testEmail: string;
   private smtpUser: string;
 
@@ -57,6 +58,7 @@ export class EmailService {
     };
 
     this.fromEmail = process.env.BREVO_FROM_EMAIL || '';
+    this.fromName = process.env.BREVO_FROM_NAME || 'Air5Star';
     this.testEmail = process.env.TEST_EMAIL || '';
     this.smtpUser = config.auth.user;
     
@@ -82,20 +84,41 @@ export class EmailService {
     try {
       // In testing mode, send all emails to test email
       const recipient = this.testEmail || options.to;
+      // Prefer SMTP user as sender to avoid unverified domain delivery issues
+      const fromAddress = this.smtpUser || this.fromEmail || options.from || '';
+      const fromHeader = `${this.fromName} <${fromAddress}>`;
       
       const mailOptions = {
-        // Fallback to SMTP user if fromEmail is not set
-        from: options.from || this.fromEmail || this.smtpUser,
+        // Always use SMTP user for the actual sender; use brand name
+        from: fromHeader,
         to: recipient,
         subject: options.subject,
         html: options.html,
+        // Use brand address for replies, if available
+        ...(this.fromEmail ? { replyTo: this.fromEmail } : {}),
       };
 
+      console.log('[EmailService] Sending email', {
+        to: mailOptions.to,
+        from: mailOptions.from,
+        replyTo: (mailOptions as any).replyTo,
+        subject: mailOptions.subject,
+        host: (this.transporter as any)?.options?.host,
+        user: this.smtpUser,
+        testRedirect: !!this.testEmail,
+      });
+
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', result.messageId);
+      console.log('[EmailService] Email sent successfully:', {
+        messageId: result.messageId,
+        response: (result as any)?.response,
+      });
       return true;
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error('[EmailService] Failed to send email:', {
+        error: (error as any)?.message || error,
+        code: (error as any)?.code,
+      });
       return false;
     }
   }

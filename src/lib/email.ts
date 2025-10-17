@@ -47,19 +47,31 @@ export class EmailService {
   private smtpUser: string;
 
   constructor() {
+    // Support multiple env naming conventions for SMTP/Brevo
+    const portRaw = process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || '587';
+    const port = parseInt(portRaw);
     const config: EmailConfig = {
-      host: process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com',
-      port: parseInt(process.env.BREVO_SMTP_PORT || '587'),
-      secure: false, // true for 465, false for other ports
+      host: process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+      port,
+      // Use secure for port 465, otherwise STARTTLS on 587/25
+      secure: port === 465,
       auth: {
-        user: process.env.BREVO_SMTP_USER || '',
-        pass: process.env.BREVO_SMTP_PASSWORD || '',
+        user:
+          process.env.BREVO_SMTP_USER ||
+          process.env.SMTP_USER ||
+          process.env.BREVO_SMTP_USERNAME ||
+          '',
+        pass:
+          process.env.BREVO_SMTP_PASSWORD ||
+          process.env.SMTP_PASSWORD ||
+          process.env.BREVO_SMTP_PASS ||
+          '',
       },
     };
 
-    this.fromEmail = process.env.BREVO_FROM_EMAIL || '';
-    this.fromName = process.env.BREVO_FROM_NAME || 'Air5Star';
-    this.testEmail = process.env.TEST_EMAIL || '';
+    this.fromEmail = process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || '';
+    this.fromName = process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star';
+    this.testEmail = process.env.TEST_EMAIL || process.env.EMAIL_TEST_RECIPIENT || '';
     this.smtpUser = config.auth.user;
     
     this.transporter = nodemailer.createTransport(config);
@@ -70,13 +82,21 @@ export class EmailService {
         console.log('[EmailService] SMTP verified:', {
           host: config.host,
           port: config.port,
+          secure: config.secure,
           user: this.smtpUser,
           from: this.fromEmail || this.smtpUser,
           testRedirect: !!this.testEmail,
         });
       })
       .catch((err) => {
-        console.error('[EmailService] SMTP verify failed:', err);
+        console.error('[EmailService] SMTP verify failed:', {
+          error: (err as any)?.message || err,
+          code: (err as any)?.code,
+          host: config.host,
+          port: config.port,
+          secure: config.secure,
+          user: this.smtpUser,
+        });
       });
   }
 

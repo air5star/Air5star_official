@@ -53,10 +53,44 @@ export async function POST(request: NextRequest) {
     // Check if user already exists in DB (case-insensitive email)
     const existingEmailUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true },
+      select: { id: true, isEmailVerified: true, name: true, email: true },
     });
 
     if (existingEmailUser) {
+      // If the account exists but is not verified, resend OTP instead of blocking
+      if (!existingEmailUser.isEmailVerified) {
+        const emailService = new EmailService();
+        const otp = emailService.generateOTP();
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await prisma.user.update({
+          where: { id: existingEmailUser.id },
+          data: {
+            emailVerificationOTP: otp,
+            emailVerificationExpiry: otpExpiry,
+          },
+        });
+
+        try {
+          await emailService.sendVerificationEmail(
+            existingEmailUser.email!,
+            existingEmailUser.name || 'Customer',
+            otp
+          );
+        } catch (emailError) {
+          console.error('[Signup] Failed to resend verification email:', {
+            email: existingEmailUser.email,
+            error: (emailError as any)?.message || emailError,
+          });
+        }
+
+        return NextResponse.json({
+          message: 'Account exists but not verified. We sent a new verification code to your email.',
+          requiresVerification: true,
+        }, { status: 200 });
+      }
+
+      // Otherwise, a verified account exists
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 409 }

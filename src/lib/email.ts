@@ -73,7 +73,7 @@ export class EmailService {
           port: config.port,
           secure: (this.transporter as any)?.options?.secure ?? config.secure,
           user: this.smtpUser,
-          from: this.fromEmail || this.smtpUser,
+          from: this.fromEmail || (this.smtpUser?.includes('@') ? this.smtpUser : ''),
           testRedirect: !!this.testEmail,
         });
       })
@@ -86,12 +86,12 @@ export class EmailService {
     try {
       // In testing mode, send all emails to test email
       const recipient = this.testEmail || options.to;
-      // Prefer SMTP user as sender to avoid unverified domain delivery issues
-      const fromAddress = this.smtpUser || this.fromEmail || options.from || '';
+      // Prefer verified fromEmail; only fall back to smtpUser if it looks like an email
+      const fromAddress = this.fromEmail || options.from || (this.smtpUser && this.smtpUser.includes('@') ? this.smtpUser : '');
       const fromHeader = `${this.fromName} <${fromAddress}>`;
       
       const mailOptions = {
-        // Always use SMTP user for the actual sender; use brand name
+        // Always use brand "from" if available
         from: fromHeader,
         to: recipient,
         subject: options.subject,
@@ -576,7 +576,7 @@ export class EmailService {
     };
   }
   getEffectiveFrom(): string {
-    const fromAddress = this.smtpUser || this.fromEmail || '';
+    const fromAddress = this.fromEmail || (this.smtpUser && this.smtpUser.includes('@') ? this.smtpUser : '');
     return `${this.fromName} <${fromAddress}>`;
   }
   isRedirectingToTest(): boolean {
@@ -595,7 +595,7 @@ export class EmailService {
     const html = this.generateVerificationEmailHTML(name, otp);
     const recipient = this.testEmail || email;
     const redirected = !!this.testEmail;
-    const fromAddress = this.smtpUser || this.fromEmail || '';
+    const fromAddress = this.fromEmail || (this.smtpUser && this.smtpUser.includes('@') ? this.smtpUser : '');
     const fromHeader = `${this.fromName} <${fromAddress}>`;
 
     try {

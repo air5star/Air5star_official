@@ -8,6 +8,7 @@ substitutions:
   _SERVICE: air5star-ecommerce
   _REPO: air5star
 
+
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build image

@@ -53,44 +53,10 @@ export async function POST(request: NextRequest) {
     // Check if user already exists in DB (case-insensitive email)
     const existingEmailUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true, isEmailVerified: true, name: true, email: true },
+      select: { id: true },
     });
 
     if (existingEmailUser) {
-      // If the account exists but is not verified, resend OTP instead of blocking
-      if (!existingEmailUser.isEmailVerified) {
-        const emailService = new EmailService();
-        const otp = emailService.generateOTP();
-        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-        await prisma.user.update({
-          where: { id: existingEmailUser.id },
-          data: {
-            emailVerificationOTP: otp,
-            emailVerificationExpiry: otpExpiry,
-          },
-        });
-
-        try {
-          await emailService.sendVerificationEmail(
-            existingEmailUser.email!,
-            existingEmailUser.name || 'Customer',
-            otp
-          );
-        } catch (emailError) {
-          console.error('[Signup] Failed to resend verification email:', {
-            email: existingEmailUser.email,
-            error: (emailError as any)?.message || emailError,
-          });
-        }
-
-        return NextResponse.json({
-          message: 'Account exists but not verified. We sent a new verification code to your email.',
-          requiresVerification: true,
-        }, { status: 200 });
-      }
-
-      // Otherwise, a verified account exists
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 409 }
@@ -149,23 +115,24 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send verification email
-    try {
-      const sent = await emailService.sendVerificationEmail(normalizedEmail, normalizedName, otp);
-      if (!sent) {
-        console.error('[Signup] Verification email not sent', {
-          email: normalizedEmail,
-          name: normalizedName,
-          reason: 'sendEmail returned false',
-        });
+    // Send verification email (diagnostics logging)
+    console.log('[Signup] Creating user', { email: normalizedEmail });
+    console.log('[Signup] OTP generated', { email: normalizedEmail, expiresAt: otpExpiry.toISOString() });
+    {
+      const smtpUser = process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USERNAME || '';
+      const fromEmail = process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || '';
+      const fromName = process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star';
+      const fromUsed = `${fromName} <${smtpUser || fromEmail}>`;
+      const redirectedToTestEmail = !!(process.env.TEST_EMAIL || process.env.EMAIL_TEST_RECIPIENT);
+      console.log('[Signup] Attempting to send verification email', { to: normalizedEmail, fromUsed, redirectedToTestEmail });
+    }
+    {
+      const info = await emailService.sendVerificationEmailWithInfo(normalizedEmail, normalizedName, otp);
+      if (info.sent) {
+        console.log('[Signup] Email sent', { messageId: info.messageId, to: normalizedEmail, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+      } else {
+        console.error('[Signup] Email send failed', { error: info.error, to: normalizedEmail, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
       }
-    } catch (emailError) {
-      console.error('[Signup] Failed to send verification email:', {
-        email: normalizedEmail,
-        name: normalizedName,
-        error: (emailError as any)?.message || emailError,
-      });
-      // Don't fail the signup if email fails, but log it
     }
 
     return NextResponse.json({

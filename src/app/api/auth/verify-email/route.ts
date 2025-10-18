@@ -217,25 +217,26 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    // Send new verification email
-    try {
-      const sent = await emailService.sendVerificationEmail(user.email, user.name, otp);
-      if (!sent) {
-        console.error('[VerifyEmail:Resend] Email send returned false', { email: user.email });
+    // Send new verification email (diagnostics logging)
+    {
+      const smtpUser = process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USERNAME || '';
+      const fromEmail = process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || '';
+      const fromName = process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star';
+      const fromUsed = `${fromName} <${smtpUser || fromEmail}>`;
+      const redirectedToTestEmail = !!(process.env.TEST_EMAIL || process.env.EMAIL_TEST_RECIPIENT);
+      console.log('[VerifyEmail:Resend] Attempting to send verification email', { to: user.email, fromUsed, redirectedToTestEmail });
+    }
+    {
+      const info = await emailService.sendVerificationEmailWithInfo(user.email, user.name, otp);
+      if (info.sent) {
+        console.log('[VerifyEmail:Resend] Email sent', { messageId: info.messageId, to: user.email, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+      } else {
+        console.error('[VerifyEmail:Resend] Email send failed', { error: info.error, to: user.email, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
         return NextResponse.json(
           { error: 'Failed to send verification email' },
           { status: 500 }
         );
       }
-    } catch (emailError) {
-      console.error('[VerifyEmail:Resend] Failed to send verification email:', {
-        email: user.email,
-        error: (emailError as any)?.message || emailError,
-      });
-      return NextResponse.json(
-        { error: 'Failed to send verification email' },
-        { status: 500 }
-      );
     }
 
     return NextResponse.json({

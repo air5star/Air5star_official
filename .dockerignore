@@ -4,6 +4,9 @@ node_modules
 .git
 .gitignore
 Dockerfile
+cloud-sql-proxy
+cloud-sql-proxy.exe
+cloud-sql-proxy*
 README.md
 DEPLOYMENT.md
 scripts/

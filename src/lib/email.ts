@@ -47,25 +47,14 @@ export class EmailService {
   private smtpUser: string;
 
   constructor() {
-    // Support multiple env naming conventions for SMTP/Brevo
-    const portRaw = process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || '587';
-    const port = parseInt(portRaw);
+    const port = parseInt(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || '587');
     const config: EmailConfig = {
       host: process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || 'smtp-relay.brevo.com',
       port,
-      // Use secure for port 465, otherwise STARTTLS on 587/25
-      secure: port === 465,
+      secure: port === 465 || String(process.env.BREVO_SMTP_SECURE || process.env.SMTP_SECURE || '').toLowerCase() === 'true', // Use secure for port 465 or explicit secure flag; otherwise STARTTLS on 587/25
       auth: {
-        user:
-          process.env.BREVO_SMTP_USER ||
-          process.env.SMTP_USER ||
-          process.env.BREVO_SMTP_USERNAME ||
-          '',
-        pass:
-          process.env.BREVO_SMTP_PASSWORD ||
-          process.env.SMTP_PASSWORD ||
-          process.env.BREVO_SMTP_PASS ||
-          '',
+        user: process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USERNAME || '',
+        pass: process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASSWORD || process.env.BREVO_SMTP_PASS || '',
       },
     };
 
@@ -82,21 +71,14 @@ export class EmailService {
         console.log('[EmailService] SMTP verified:', {
           host: config.host,
           port: config.port,
-          secure: config.secure,
+          secure: (this.transporter as any)?.options?.secure ?? config.secure,
           user: this.smtpUser,
           from: this.fromEmail || this.smtpUser,
           testRedirect: !!this.testEmail,
         });
       })
       .catch((err) => {
-        console.error('[EmailService] SMTP verify failed:', {
-          error: (err as any)?.message || err,
-          code: (err as any)?.code,
-          host: config.host,
-          port: config.port,
-          secure: config.secure,
-          user: this.smtpUser,
-        });
+        console.error('[EmailService] SMTP verify failed:', err);
       });
   }
 
@@ -579,6 +561,55 @@ export class EmailService {
     const expiration = new Date();
     expiration.setMinutes(expiration.getMinutes() + 10);
     return expiration;
+  }
+
+  getEnvPresence(): { BREVO_SMTP_HOST: boolean; BREVO_SMTP_PORT: boolean; BREVO_SMTP_USER: boolean; BREVO_SMTP_PASSWORD: boolean; BREVO_FROM_EMAIL: boolean; BREVO_FROM_NAME: boolean; TEST_EMAIL: boolean; BREVO_SMTP_SECURE: boolean } {
+    return {
+      BREVO_SMTP_HOST: !!(process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST),
+      BREVO_SMTP_PORT: !!(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT),
+      BREVO_SMTP_USER: !!(process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USERNAME),
+      BREVO_SMTP_PASSWORD: !!(process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASSWORD || process.env.BREVO_SMTP_PASS),
+      BREVO_FROM_EMAIL: !!(process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL),
+      BREVO_FROM_NAME: !!(process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME),
+      TEST_EMAIL: !!(process.env.TEST_EMAIL || process.env.EMAIL_TEST_RECIPIENT),
+      BREVO_SMTP_SECURE: String(process.env.BREVO_SMTP_SECURE || process.env.SMTP_SECURE || '').length > 0,
+    };
+  }
+  getEffectiveFrom(): string {
+    const fromAddress = this.smtpUser || this.fromEmail || '';
+    return `${this.fromName} <${fromAddress}>`;
+  }
+  isRedirectingToTest(): boolean {
+    return !!(this.testEmail);
+  }
+  async verifyTransport(): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await this.transporter.verify();
+      return { ok: true };
+    } catch (err: any) {
+      return { ok: false, error: err?.message || String(err) };
+    }
+  }
+  async sendVerificationEmailWithInfo(email: string, name: string, otp: string): Promise<{ sent: boolean; messageId?: string; fromUsed: string; redirectedToTestEmail: boolean; error?: string }> {
+    const subject = 'Verify Your Email - Air5Star';
+    const html = this.generateVerificationEmailHTML(name, otp);
+    const recipient = this.testEmail || email;
+    const redirected = !!this.testEmail;
+    const fromAddress = this.smtpUser || this.fromEmail || '';
+    const fromHeader = `${this.fromName} <${fromAddress}>`;
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: fromHeader,
+        to: recipient,
+        subject,
+        html,
+        ...(this.fromEmail ? { replyTo: this.fromEmail } : {}),
+      });
+      return { sent: true, messageId: (info as any)?.messageId, fromUsed: fromHeader, redirectedToTestEmail: redirected };
+    } catch (error: any) {
+      return { sent: false, error: error?.message || String(error), fromUsed: fromHeader, redirectedToTestEmail: redirected };
+    }
   }
 }
 

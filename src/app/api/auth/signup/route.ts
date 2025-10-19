@@ -129,9 +129,13 @@ export async function POST(request: NextRequest) {
     {
       const info = await emailService.sendVerificationEmailWithInfo(normalizedEmail, normalizedName, otp);
       if (info.sent) {
-        console.log('[Signup] Email sent', { messageId: info.messageId, to: normalizedEmail, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+        console.log('[Signup] Email sent', { messageId: info.messageId, to: normalizedEmail, toUsed: info.recipientUsed, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
       } else {
-        console.error('[Signup] Email send failed', { error: info.error, to: normalizedEmail, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+        console.error('[Signup] Email send failed', { error: info.error, to: normalizedEmail, toUsed: info.recipientUsed, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+        return NextResponse.json(
+          { error: 'Failed to send verification email' },
+          { status: 500 }
+        );
       }
     }
 

@@ -229,9 +229,9 @@ export async function PUT(request: NextRequest) {
     {
       const info = await emailService.sendVerificationEmailWithInfo(user.email, user.name, otp);
       if (info.sent) {
-        console.log('[VerifyEmail:Resend] Email sent', { messageId: info.messageId, to: user.email, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+        console.log('[VerifyEmail:Resend] Email sent', { messageId: info.messageId, to: user.email, toUsed: info.recipientUsed, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
       } else {
-        console.error('[VerifyEmail:Resend] Email send failed', { error: info.error, to: user.email, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+        console.error('[VerifyEmail:Resend] Email send failed', { error: info.error, to: user.email, toUsed: info.recipientUsed, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
         return NextResponse.json(
           { error: 'Failed to send verification email' },
           { status: 500 }

@@ -45,7 +45,6 @@ export class EmailService {
   private fromName: string;
   private testEmail: string;
   private smtpUser: string;
-  private apiKey: string;
 
   constructor() {
     const port = parseInt(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || '587');
@@ -63,7 +62,6 @@ export class EmailService {
     this.fromName = process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star';
     this.testEmail = process.env.TEST_EMAIL || '';
     this.smtpUser = config.auth.user;
-    this.apiKey = process.env.BREVO_API_KEY || '';
     
     this.transporter = nodemailer.createTransport(config);
 
@@ -118,16 +116,6 @@ export class EmailService {
         error: (error as any)?.message || error,
         code: (error as any)?.code,
       });
-      // Fallback to Brevo HTTP API if available
-      if (this.apiKey) {
-        const fb = await this.sendViaBrevoHTTP({ to: options.to, subject: options.subject, html: options.html, from: options.from });
-        if (fb.ok) {
-          console.log('[EmailService] HTTP fallback sent successfully:', { messageId: fb.messageId });
-          return true;
-        } else {
-          console.error('[EmailService] HTTP fallback failed:', { error: fb.error });
-        }
-      }
       return false;
     }
   }
@@ -415,15 +403,6 @@ export class EmailService {
       });
       return { sent: true, messageId: (info as any)?.messageId, fromUsed: fromHeader, redirectedToTestEmail: redirected, recipientUsed: recipient };
     } catch (error: any) {
-      // Attempt HTTP fallback if SMTP fails
-      if (this.apiKey) {
-        const fb = await this.sendViaBrevoHTTP({ to: recipient, subject, html, from: fromAddress });
-        if (fb.ok) {
-          return { sent: true, messageId: fb.messageId, fromUsed: fromHeader, redirectedToTestEmail: redirected, recipientUsed: recipient };
-        } else {
-          return { sent: false, error: fb.error || (error?.message || String(error)), fromUsed: fromHeader, redirectedToTestEmail: redirected, recipientUsed: recipient };
-        }
-      }
       return { sent: false, error: error?.message || String(error), fromUsed: fromHeader, redirectedToTestEmail: redirected, recipientUsed: recipient };
     }
   }
@@ -431,38 +410,3 @@ export class EmailService {
 
 export const emailService = new EmailService();
 export default emailService;
-
-
-private async sendViaBrevoHTTP(options: { to: string; subject: string; html: string; from?: string }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
-  try {
-    if (!this.apiKey) {
-      return { ok: false, error: 'BREVO_API_KEY missing' };
-    }
-    const recipient = this.testEmail || options.to;
-    const fromAddress = this.fromEmail || options.from || (this.smtpUser && this.smtpUser.includes('@') ? this.smtpUser : '');
-    const payload: any = {
-      sender: { email: fromAddress || this.smtpUser, name: this.fromName },
-      to: [{ email: recipient }],
-      subject: options.subject,
-      htmlContent: options.html,
-    };
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': this.apiKey,
-      },
-      body: JSON.stringify(payload),
-    });
-    const text = await res.text();
-    let data: any = {};
-    try { data = JSON.parse(text); } catch {}
-    if (!res.ok) {
-      return { ok: false, error: `HTTP ${res.status} ${res.statusText}: ${text}` };
-    }
-    const messageId = data?.messageId || (Array.isArray(data?.messageIds) ? data.messageIds[0] : undefined);
-    return { ok: true, messageId };
-  } catch (err: any) {
-    return { ok: false, error: err?.message || String(err) };
-  }
-}

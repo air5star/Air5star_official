@@ -12,7 +12,7 @@ export default function RootLayout({
       <body>
         {children}
         <Script
-          src="//code.tidio.co/wzdpnxu7gfb2wop0hofuw4acrzmjscsw.js"
+          src="https://code.tidio.co/wzdpnxu7gfb2wop0hofuw4acrzmjscsw.js"
           strategy="afterInteractive"
         />
       </body>

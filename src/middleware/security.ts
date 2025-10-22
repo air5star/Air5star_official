@@ -11,15 +11,15 @@ export function securityHeaders(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   
-  // Content Security Policy
+  // Content Security Policy (allow Razorpay + Tidio)
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://code.tidio.co",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https:",
-    "connect-src 'self' https://api.razorpay.com",
-    "frame-src https://api.razorpay.com",
+    "connect-src 'self' https://api.razorpay.com https://api.tidio.co wss://api.tidio.co https://code.tidio.co",
+    "frame-src https://api.razorpay.com https://www.tidio.com",
   ].join('; ');
   
   response.headers.set('Content-Security-Policy', csp);

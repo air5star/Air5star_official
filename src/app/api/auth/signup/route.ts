@@ -115,21 +115,28 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send verification email
+    // Send verification email (diagnostics logging)
     console.log('[Signup] Creating user', { email: normalizedEmail });
     console.log('[Signup] OTP generated', { email: normalizedEmail, expiresAt: otpExpiry.toISOString() });
-    try {
-      const sent = await emailService.sendVerificationEmail(normalizedEmail, normalizedName, otp);
-      if (!sent) {
-        throw new Error('Email send returned false');
+    {
+      const smtpUser = process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USERNAME || '';
+      const fromEmail = process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || '';
+      const fromName = process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star';
+      const fromUsed = `${fromName} <${smtpUser || fromEmail}>`;
+      const redirectedToTestEmail = !!(process.env.TEST_EMAIL || process.env.EMAIL_TEST_RECIPIENT);
+      console.log('[Signup] Attempting to send verification email', { to: normalizedEmail, fromUsed, redirectedToTestEmail });
+    }
+    {
+      const info = await emailService.sendVerificationEmailWithInfo(normalizedEmail, normalizedName, otp);
+      if (info.sent) {
+        console.log('[Signup] Email sent', { messageId: info.messageId, to: normalizedEmail, toUsed: info.recipientUsed, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+      } else {
+        console.error('[Signup] Email send failed', { error: info.error, to: normalizedEmail, toUsed: info.recipientUsed, fromUsed: info.fromUsed, redirectedToTestEmail: info.redirectedToTestEmail });
+        return NextResponse.json(
+          { error: 'Failed to send verification email' },
+          { status: 500 }
+        );
       }
-      console.log('[Signup] Verification email sent');
-    } catch (emailError) {
-      console.error('[Signup] Failed to send verification email:', emailError);
-      return NextResponse.json(
-        { error: 'Failed to send verification email' },
-        { status: 500 }
-      );
     }
 
     return NextResponse.json({

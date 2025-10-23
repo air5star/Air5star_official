@@ -19,102 +19,94 @@ const LeadingBrands = () => {
           <div className="grid grid-cols-3 md:grid-cols-5 gap-4 md:gap-8 mb-8 md:mb-12 w-full max-w-5xl">
             {/* Brand 1 - Voltas */}
             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 flex items-center justify-center group">
-              <div className="relative w-full aspect-square flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
-                  src={'/leadingBrands-imgs/voltas.jpeg'}
+                  src={'/leadingBrands-imgs/voltas.png'}
                   alt={'Voltas'}
-                  width={80}
-                  height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform"
+                  fill
+                  className="object-contain p-1 group-hover:scale-105 transition-transform"
                 />
               </div>
             </div>
             
             {/* Brand 2 - LG */}
             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 flex items-center justify-center group">
-              <div className="relative w-full aspect-square flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/lg.svg'}
                   alt={'LG'}
-                  width={80}
-                  height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform"
+                  fill
+                  className="object-contain p-1 group-hover:scale-105 transition-transform"
                 />
               </div>
             </div>
             
             {/* Brand 3 - Whirlpool */}
             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 flex items-center justify-center group">
-              <div className="relative w-full aspect-square flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/whirpool.svg'}
                   alt={'Whirlpool'}
-                  width={80}
-                  height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform"
+                  fill
+                  className="object-contain p-1 group-hover:scale-105 transition-transform"
                 />
               </div>
             </div>
             
             {/* Brand 4 - Blue Star */}
             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 flex items-center justify-center group">
-              <div className="relative w-full aspect-square flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/bluestar.jpeg'}
                   alt={'Blue Star'}
-                  width={80}
-                  height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform"
+                  fill
+                  className="object-contain p-1 group-hover:scale-105 transition-transform"
                 />
               </div>
             </div>
             
             {/* Brand 5 - Daikin */}
             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 flex items-center justify-center group">
-              <div className="relative w-full aspect-square flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
-                  src={'/leadingBrands-imgs/daikin.jpeg'}
+                  src={'/leadingBrands-imgs/daikin.png'}
                   alt={'Daikin'}
-                  width={80}
-                  height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform"
+                  fill
+                  className="object-contain p-1 group-hover:scale-105 transition-transform"
                 />
               </div>
             </div>
 
             {/* Additional brands from our product data */}
             <div className="hidden md:flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
-              <div className="relative w-full aspect-square flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/havellss.png'}
                   alt={'Havells'}
-                  width={80}
-                  height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform"
+                  fill
+                  className="object-contain p-1 group-hover:scale-105 transition-transform"
                 />
               </div>
             </div>
 
             <div className="hidden md:flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
-              <div className="relative w-full aspect-square flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/cromptonn.png'}
                   alt={'Crompton'}
-                  width={80}
-                  height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform"
+                  fill
+                  className="object-contain p-1 group-hover:scale-105 transition-transform"
                 />
               </div>
             </div>
 
             <div className="hidden md:flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
-              <div className="relative w-full aspect-square flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/luker.png'}
                   alt={'Luker'}
-                  width={80}
-                  height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform"
+                  fill
+                  className="object-contain p-1 group-hover:scale-105 transition-transform"
                 />
               </div>
             </div>

@@ -65,12 +65,6 @@ export default function Home() {
 
                   {/* Banner Content */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 bg-black/30">
-                    <h1 className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-center mb-2 md:mb-4">
-                      Premium HVAC Solutions
-                    </h1>
-                    <p className="text-sm md:text-lg text-center max-w-2xl mb-4 md:mb-6 hidden sm:block">
-                      Quality products for all your heating, ventilation, and air conditioning needs
-                    </p>
                     <div className="flex flex-col items-center space-y-3">
                       <Link href="/products">
                         <Button className="bg-blue-900 hover:bg-blue-800 text-white rounded-md px-6 py-2 md:px-8 md:py-3 text-sm md:text-base font-medium transition-colors">

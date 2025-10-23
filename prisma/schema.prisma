@@ -175,7 +175,7 @@ model Order {
   updatedAt         DateTime    @updatedAt
 
   // Relations
-  user            User        @relation(fields: [userId], references: [id])
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   shippingAddress Address     @relation(fields: [shippingAddressId], references: [id])
   orderItems      OrderItem[]
   payments        Payment[]

@@ -18,7 +18,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User; status?: number }>;
   signup: (userData: {
     name: string;
     email: string;
@@ -128,7 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await authAPI.login({ email, password });
       
       if (result.error) {
-        return { success: false, error: result.error };
+        return { success: false, error: result.error, status: result.status };
       }
 
       if (result.data) {
@@ -136,10 +136,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('authToken', token);
         localStorage.setItem('userData', JSON.stringify(userData));
         setUser(userData);
-        return { success: true, user: userData };
+        return { success: true, user: userData, status: result.status };
       }
 
-      return { success: false, error: 'Login failed' };
+      return { success: false, error: 'Login failed', status: result.status };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Network error' };

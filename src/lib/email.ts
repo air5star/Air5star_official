@@ -44,6 +44,7 @@ export class EmailService {
   private fromEmail: string;
   private testEmail: string;
   private smtpUser: string;
+  private fromName: string;
 
   constructor() {
     const config: EmailConfig = {
@@ -59,6 +60,7 @@ export class EmailService {
     this.fromEmail = process.env.BREVO_FROM_EMAIL || '';
     this.testEmail = process.env.TEST_EMAIL || '';
     this.smtpUser = config.auth.user;
+    this.fromName = process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star';
     
     this.transporter = nodemailer.createTransport(config);
 
@@ -69,7 +71,7 @@ export class EmailService {
           host: config.host,
           port: config.port,
           user: this.smtpUser,
-          from: this.fromEmail || this.smtpUser,
+          from: `${this.fromName} <${this.fromEmail || this.smtpUser}>`,
           testRedirect: !!this.testEmail,
         });
       })
@@ -84,8 +86,8 @@ export class EmailService {
       const recipient = this.testEmail || options.to;
       
       const mailOptions = {
-        // Fallback to SMTP user if fromEmail is not set
-        from: options.from || this.fromEmail || this.smtpUser,
+        // Include display name; fallback to SMTP user if fromEmail is not set
+        from: options.from || `${this.fromName} <${this.fromEmail || this.smtpUser}>`,
         to: recipient,
         subject: options.subject,
         html: options.html,
@@ -100,15 +102,37 @@ export class EmailService {
     }
   }
 
-  async sendVerificationEmail(email: string, name: string, otp: string): Promise<boolean> {
-    const subject = 'Verify Your Email - Air5Star';
-    const html = this.generateVerificationEmailHTML(name, otp);
-    
-    return this.sendEmail({
-      to: email,
-      subject,
-      html,
-    });
+  async sendVerificationEmailWithInfo(email: string, name: string, otp: string): Promise<{ sent: boolean; messageId?: string; fromUsed: string; redirectedToTestEmail: boolean; recipientUsed: string; error?: string }> {
+    const recipient = this.testEmail || email;
+    const fromAddress = this.fromEmail || this.smtpUser;
+    const fromHeader = `${this.fromName} <${fromAddress}>`;
+
+    const mailOptions = {
+      from: fromHeader,
+      to: recipient,
+      subject: 'Verify Your Email - Air5Star',
+      html: this.generateVerificationEmailHTML(name, otp),
+      ...(this.fromEmail ? { replyTo: this.fromEmail } : {}),
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      return {
+        sent: true,
+        messageId: result.messageId,
+        fromUsed: fromHeader,
+        redirectedToTestEmail: !!this.testEmail,
+        recipientUsed: recipient,
+      };
+    } catch (error) {
+      return {
+        sent: false,
+        error: (error as any)?.message || String(error),
+        fromUsed: fromHeader,
+        redirectedToTestEmail: !!this.testEmail,
+        recipientUsed: recipient,
+      };
+    }
   }
 
   async sendOrderConfirmationEmail(email: string, orderData: OrderConfirmationData): Promise<boolean> {

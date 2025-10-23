@@ -1,3 +1,17 @@
+require('dotenv').config({ path: require('path').join(process.cwd(), '.env') });
+try {
+  const fs = require('fs');
+  const path = require('path');
+  const envCloudRunPath = path.join(process.cwd(), '.cloudrun.env');
+  if (fs.existsSync(envCloudRunPath)) {
+    require('dotenv').config({ path: envCloudRunPath });
+  }
+  const envLocalPath = path.join(process.cwd(), '.env.local');
+  if (fs.existsSync(envLocalPath)) {
+    require('dotenv').config({ path: envLocalPath, override: true });
+  }
+} catch {}
+
 const { execSync, spawn } = require('child_process');
 const path = require('path');
 

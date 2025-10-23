@@ -47,14 +47,14 @@ export default function SignInForm() {
       
       router.push('/');
     } else {
-      // Check if the error is about email verification
-      if (result.error?.includes('email is not verified')) {
-        // Extract email from error message or use the login input
+      // Redirect to verification page on 403 or explicit verification error
+      const requiresVerification = result.status === 403 || (result.error?.toLowerCase() || '').includes('verify your email');
+      if (requiresVerification) {
         const email = data.emailOrMobile;
         router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-      } else {
-        setLoginError(result.error || 'Invalid credentials');
+        return;
       }
+      setLoginError(result.error || 'Invalid credentials');
     }
   };
 

@@ -50,20 +50,25 @@ export class EmailService {
     const port = parseInt(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || '587');
     const secure = port === 465 || String(process.env.BREVO_SMTP_SECURE || process.env.SMTP_SECURE || '').toLowerCase() === 'true';
 
+    const userRaw = process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USERNAME || '';
+    const passRaw = process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASSWORD || process.env.BREVO_SMTP_PASS || '';
+    const user = (userRaw || '').trim();
+    const pass = (passRaw || '').trim();
+
     const config: EmailConfig = {
-      host: process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+      host: (process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || 'smtp-relay.brevo.com').trim(),
       port,
       secure,
       auth: {
-        user: process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USERNAME || '',
-        pass: process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASSWORD || process.env.BREVO_SMTP_PASS || '',
+        user,
+        pass,
       },
     };
 
-    this.fromEmail = process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || '';
-    this.testEmail = process.env.TEST_EMAIL || process.env.EMAIL_TEST_RECIPIENT || '';
+    this.fromEmail = (process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || '').trim();
+    this.testEmail = (process.env.TEST_EMAIL || process.env.EMAIL_TEST_RECIPIENT || '').trim();
     this.smtpUser = config.auth.user;
-    this.fromName = process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star';
+    this.fromName = (process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star').trim();
     
     this.transporter = nodemailer.createTransport(config);
 
@@ -378,6 +383,7 @@ export class EmailService {
             }
         </style>
     </head>
+    
     <body>
         <div class="container">
             <div class="header">

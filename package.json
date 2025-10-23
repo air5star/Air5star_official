@@ -6,7 +6,6 @@
     "dev": "dotenv -e .cloudrun.env -- next dev",
     "dev:local": "next dev",
     "build": "next build",
-    
     "build:cloudrun": "dotenv -e .cloudrun.env -- next build",
     "start": "next start",
     "start:cloudrun": "dotenv -e .cloudrun.env -- next start",

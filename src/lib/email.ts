@@ -47,37 +47,57 @@ export class EmailService {
   private fromName: string;
 
   constructor() {
+    const port = parseInt(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || '587');
+    const secure = port === 465 || String(process.env.BREVO_SMTP_SECURE || process.env.SMTP_SECURE || '').toLowerCase() === 'true';
+
     const config: EmailConfig = {
-      host: process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com',
-      port: parseInt(process.env.BREVO_SMTP_PORT || '587'),
-      secure: false, // true for 465, false for other ports
+      host: process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+      port,
+      secure,
       auth: {
-        user: process.env.BREVO_SMTP_USER || '',
-        pass: process.env.BREVO_SMTP_PASSWORD || '',
+        user: process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USERNAME || '',
+        pass: process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASSWORD || process.env.BREVO_SMTP_PASS || '',
       },
     };
 
-    this.fromEmail = process.env.BREVO_FROM_EMAIL || '';
-    this.testEmail = process.env.TEST_EMAIL || '';
+    this.fromEmail = process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || '';
+    this.testEmail = process.env.TEST_EMAIL || process.env.EMAIL_TEST_RECIPIENT || '';
     this.smtpUser = config.auth.user;
     this.fromName = process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Air5Star';
     
     this.transporter = nodemailer.createTransport(config);
 
-    // Quick connectivity check (non-blocking)
-    this.transporter.verify()
-      .then(() => {
-        console.log('[EmailService] SMTP verified:', {
-          host: config.host,
-          port: config.port,
-          user: this.smtpUser,
-          from: `${this.fromName} <${this.fromEmail || this.smtpUser}>`,
-          testRedirect: !!this.testEmail,
+    // Only verify when explicitly enabled AND credentials are present
+    const hasAuth = !!(config.auth.user && config.auth.pass);
+    const shouldVerify = String(process.env.EMAIL_VERIFY_ON_START || process.env.DIAGNOSTICS_VERIFY_ON_START || '').toLowerCase() === 'true';
+
+    if (shouldVerify && hasAuth) {
+      this.transporter.verify()
+        .then(() => {
+          console.log('[EmailService] SMTP verified:', {
+            host: config.host,
+            port: config.port,
+            user: this.smtpUser ? 'present' : 'missing',
+            from: `${this.fromName} <${this.fromEmail || this.smtpUser}>`,
+            testRedirect: !!this.testEmail,
+          });
+        })
+        .catch((err) => {
+          console.error('[EmailService] SMTP verify failed:', err);
         });
-      })
-      .catch((err) => {
-        console.error('[EmailService] SMTP verify failed:', err);
-      });
+    } else if (shouldVerify && !hasAuth) {
+      console.warn('[EmailService] SMTP verify skipped: missing credentials');
+    }
+  }
+
+  // Explicit transport verification (used by diagnostics)
+  async verifyTransport(): Promise<{ ok: boolean; error?: string }>{
+    try {
+      await this.transporter.verify();
+      return { ok: true };
+    } catch (err: any) {
+      return { ok: false, error: err?.message || String(err) };
+    }
   }
 
   private async sendEmail(options: EmailOptions): Promise<boolean> {
@@ -102,7 +122,7 @@ export class EmailService {
     }
   }
 
-  async sendVerificationEmailWithInfo(email: string, name: string, otp: string): Promise<{ sent: boolean; messageId?: string; fromUsed: string; redirectedToTestEmail: boolean; recipientUsed: string; error?: string }> {
+  async sendVerificationEmailWithInfo(email: string, name: string, otp: string): Promise<{ sent: boolean; messageId?: string; fromUsed: string; redirectedToTestEmail: boolean; recipientUsed: string; error?: string }>{
     const recipient = this.testEmail || email;
     const fromAddress = this.fromEmail || this.smtpUser;
     const fromHeader = `${this.fromName} <${fromAddress}>`;

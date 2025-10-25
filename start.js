@@ -16,6 +16,13 @@ const { execSync, spawn } = require('child_process');
 const path = require('path');
 
 function runPrismaPush() {
+  // New guard: only run when explicitly enabled
+  const shouldPush = String(process.env.PRISMA_PUSH_ON_START || '').toLowerCase() === 'true';
+  if (!shouldPush) {
+    console.log('[startup] PRISMA_PUSH_ON_START=false; skipping prisma db push');
+    return;
+  }
+
   const dbUrl = process.env.DATABASE_URL || '';
   if (!dbUrl) {
     console.warn('[startup] DATABASE_URL not set; skipping prisma db push');
@@ -49,7 +56,10 @@ function maybeSeedDatabase() {
 }
 
 function startServer() {
-  console.log('[startup] Starting Next.js server...');
+  // Ensure server listens on Cloud Run-provided port
+  const port = process.env.PORT || '3000';
+  process.env.PORT = port;
+  console.log(`[startup] Starting Next.js server on PORT=${port}...`);
   const child = spawn('node', ['server.js'], { stdio: 'inherit' });
   child.on('exit', (code) => {
     console.log(`[startup] Server exited with code ${code}`);

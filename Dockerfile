@@ -16,7 +16,6 @@ RUN npm run build
 FROM node:20-bullseye-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=3000
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
@@ -32,5 +31,5 @@ COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder /app/node_modules/jiti ./node_modules/jiti
 COPY --from=builder /app/start.js ./start.js
 
-EXPOSE 3000
+EXPOSE 8080
 CMD ["node", "start.js"]

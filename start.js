@@ -56,10 +56,11 @@ function maybeSeedDatabase() {
 }
 
 function startServer() {
-  // Ensure server listens on Cloud Run-provided port
+  // Ensure server listens on Cloud Run-provided port and public interface
   const port = process.env.PORT || '3000';
   process.env.PORT = port;
-  console.log(`[startup] Starting Next.js server on PORT=${port}...`);
+  process.env.HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
+  console.log(`[startup] Starting Next.js server on HOSTNAME=${process.env.HOSTNAME} PORT=${port}...`);
   const child = spawn('node', ['server.js'], { stdio: 'inherit' });
   child.on('exit', (code) => {
     console.log(`[startup] Server exited with code ${code}`);

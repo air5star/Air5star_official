@@ -35,7 +35,7 @@ steps:
           --region ${_REGION} \
           --allow-unauthenticated \
           --min-instances 1 \
-          --port 3000 \
+          --port 8080 \
           --cpu 1 \
           --memory 1Gi \
           --add-cloudsql-instances air5star-ecommerce:asia-south1:air5star-postgres \

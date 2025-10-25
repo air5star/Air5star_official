@@ -59,14 +59,22 @@ function startServer() {
   const port = process.env.PORT || '3000';
   process.env.PORT = port;
   process.env.HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
-  console.log(`[startup] Starting Next.js server on HOSTNAME=${process.env.HOSTNAME} PORT=${port}...`);
-  const path = require('path');
-  const nextBin = path.join(process.cwd(), 'node_modules', '.bin', process.platform === 'win32' ? 'next.cmd' : 'next');
-  const args = ['start', '-p', port, '-H', process.env.HOSTNAME];
-  const { spawn } = require('child_process');
-  const child = spawn(nextBin, args, { stdio: 'inherit' });
+  console.log(`[startup] Starting server on HOSTNAME=${process.env.HOSTNAME} PORT=${port}...`);
+
+  // Prefer Next standalone server.js when available (matches Dockerfile copy)
+  const serverJsPath = path.join(process.cwd(), 'server.js');
+  let child;
+  if (require('fs').existsSync(serverJsPath)) {
+    child = spawn('node', [serverJsPath], { stdio: 'inherit' });
+  } else {
+    // Fallback to Next CLI if standalone not present
+    const nextBin = path.join(process.cwd(), 'node_modules', '.bin', process.platform === 'win32' ? 'next.cmd' : 'next');
+    const args = ['start', '-p', port, '-H', process.env.HOSTNAME];
+    child = spawn(nextBin, args, { stdio: 'inherit' });
+  }
+
   child.on('exit', (code) => {
-    console.log(`[startup] Next.js exited with code ${code}`);
+    console.log(`[startup] App exited with code ${code}`);
     process.exit(code);
   });
 }

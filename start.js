@@ -1,14 +1,18 @@
-require('dotenv').config({ path: require('path').join(process.cwd(), '.env') });
+try {
+  require('dotenv').config({ path: require('path').join(process.cwd(), '.env') });
+} catch {
+  // dotenv is optional in production containers; Cloud Run injects env vars.
+}
 try {
   const fs = require('fs');
   const path = require('path');
   const envCloudRunPath = path.join(process.cwd(), '.cloudrun.env');
   if (fs.existsSync(envCloudRunPath)) {
-    require('dotenv').config({ path: envCloudRunPath });
+    try { require('dotenv').config({ path: envCloudRunPath }); } catch {}
   }
   const envLocalPath = path.join(process.cwd(), '.env.local');
   if (fs.existsSync(envLocalPath)) {
-    require('dotenv').config({ path: envLocalPath, override: true });
+    try { require('dotenv').config({ path: envLocalPath, override: true }); } catch {}
   }
 } catch {}
 

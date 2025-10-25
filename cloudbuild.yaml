@@ -38,6 +38,8 @@ steps:
           --port 8080 \
           --cpu 1 \
           --memory 1Gi \
+          --command node \
+          --args start.js \
           --add-cloudsql-instances air5star-ecommerce:asia-south1:air5star-postgres \
           --env-vars-file .cloudrun.env
 

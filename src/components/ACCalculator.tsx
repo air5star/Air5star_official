@@ -63,6 +63,7 @@ const ACCalculator: React.FC<ACCalculatorProps> = ({ className }) => {
     temperature: ''
   });
   const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendationNote, setRecommendationNote] = useState<string | null>(null);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -89,18 +90,37 @@ const ACCalculator: React.FC<ACCalculatorProps> = ({ className }) => {
   const getRecommendations = () => {
     const requiredTonnage = calculateTonnage();
     const acProducts = productsData.find(p => p.id === 'air-conditioning')?.products || [];
-    
-    // Filter and sort products based on tonnage
-    const suitable = acProducts.filter(product => {
-      const tonnage = parseFloat(product.grossVolume.replace(/[^0-9.]/g, ''));
-      return tonnage >= requiredTonnage * 0.8 && tonnage <= requiredTonnage * 1.3;
-    }).sort((a, b) => {
-      const tonnageA = parseFloat(a.grossVolume.replace(/[^0-9.]/g, ''));
-      const tonnageB = parseFloat(b.grossVolume.replace(/[^0-9.]/g, ''));
-      return Math.abs(tonnageA - requiredTonnage) - Math.abs(tonnageB - requiredTonnage);
-    }).slice(0, 6); // Show top 6 recommendations
-    
-    setRecommendations(suitable);
+
+    const parseTon = (product: any): number => {
+      const raw = (product.grossVolume || '').toString();
+      const parsed = parseFloat(raw.replace(/[^0-9.]/g, ''));
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    // Sort all products by closeness to required tonnage
+    const sortedByCloseness = [...acProducts].sort((a, b) => {
+      const tonA = parseTon(a);
+      const tonB = parseTon(b);
+      return Math.abs(tonA - requiredTonnage) - Math.abs(tonB - requiredTonnage);
+    });
+
+    // Preferred window: within ±20% to +30% of required tonnage
+    const suitable = sortedByCloseness
+      .filter((product) => {
+        const ton = parseTon(product);
+        return ton >= requiredTonnage * 0.8 && ton <= requiredTonnage * 1.3;
+      })
+      .slice(0, 6);
+
+    if (suitable.length > 0) {
+      setRecommendations(suitable);
+      setRecommendationNote(null);
+    } else {
+      // Fallback: show the 6 closest products even if outside preferred window
+      const fallback = sortedByCloseness.slice(0, 6);
+      setRecommendations(fallback);
+      setRecommendationNote('No exact match found. Showing closest alternatives.');
+    }
   };
 
   const handleNext = () => {
@@ -129,6 +149,7 @@ const ACCalculator: React.FC<ACCalculatorProps> = ({ className }) => {
       temperature: ''
     });
     setRecommendations([]);
+    setRecommendationNote(null);
   };
 
   const handleClose = () => {
@@ -313,6 +334,9 @@ const ACCalculator: React.FC<ACCalculatorProps> = ({ className }) => {
                   Based on your room size ({formData.length}m × {formData.width}m × {formData.height}m) 
                   and {formData.people} people, we recommend {calculateTonnage().toFixed(1)} ton capacity.
                 </p>
+                {recommendationNote && (
+                  <p className="text-xs text-amber-600 mt-1">{recommendationNote}</p>
+                )}
               </div>
               
               {recommendations.length > 0 ? (
@@ -351,7 +375,7 @@ const ACCalculator: React.FC<ACCalculatorProps> = ({ className }) => {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">No suitable AC units found for your requirements.</p>
+                  <p className="text-gray-600">No products available at the moment.</p>
                 </div>
               )}
               

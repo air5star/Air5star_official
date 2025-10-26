@@ -21,7 +21,7 @@ const LeadingBrands = () => {
             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 flex items-center justify-center group">
               <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
-                  src={'/leadingBrands-imgs/voltas.png'}
+                  src={'/leadingBrands-imgs/Voltas.png'}
                   alt={'Voltas'}
                   fill
                   className="object-contain p-1 group-hover:scale-105 transition-transform"
@@ -69,7 +69,7 @@ const LeadingBrands = () => {
             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 flex items-center justify-center group">
               <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
-                  src={'/leadingBrands-imgs/daikin.png'}
+                  src={'/leadingBrands-imgs/Daikin.png'}
                   alt={'Daikin'}
                   fill
                   className="object-contain p-1 group-hover:scale-105 transition-transform"
@@ -78,7 +78,7 @@ const LeadingBrands = () => {
             </div>
 
             {/* Additional brands from our product data */}
-            <div className="hidden md:flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
+            <div className="flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
               <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/havellss.png'}
@@ -89,7 +89,7 @@ const LeadingBrands = () => {
               </div>
             </div>
 
-            <div className="hidden md:flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
+            <div className="flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
               <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/cromptonn.png'}
@@ -100,7 +100,7 @@ const LeadingBrands = () => {
               </div>
             </div>
 
-            <div className="hidden md:flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
+            <div className="flex bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 items-center justify-center group">
               <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <Image
                   src={'/leadingBrands-imgs/luker.png'}

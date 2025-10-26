@@ -1,5 +1,30 @@
 import { z } from 'zod';
 
+// Helper to build combined password error messages
+function buildPasswordMessage(missing: string[]): string {
+  const parts = missing.map((m) => {
+    switch (m) {
+      case 'uppercase':
+        return 'at least one uppercase letter';
+      case 'lowercase':
+        return 'at least one lowercase letter';
+      case 'number':
+        return 'at least one number';
+      case 'special':
+        return 'at least one special character';
+      default:
+        return m;
+    }
+  });
+  if (parts.length === 1) {
+    return `Password must contain ${parts[0]}.`;
+  }
+  if (parts.length === 2) {
+    return `Password must contain ${parts[0]} and ${parts[1]}.`;
+  }
+  return `Password must contain ${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}.`;
+}
+
 // User validation schemas
 export const signupSchema = z.object({
   name: z.string()
@@ -17,8 +42,20 @@ export const signupSchema = z.object({
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password must be less than 128 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
-      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+    .superRefine((val, ctx) => {
+      const missing: string[] = [];
+      if (!/[A-Z]/.test(val)) missing.push('uppercase');
+      if (!/[a-z]/.test(val)) missing.push('lowercase');
+      if (!/\d/.test(val)) missing.push('number');
+      if (!/[@$!%*?&]/.test(val)) missing.push('special');
+      if (missing.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: buildPasswordMessage(missing),
+          path: ['password']
+        });
+      }
+    }),
   phone: z.string()
     .optional()
     .refine((phone) => {
@@ -51,7 +88,23 @@ export const frontendSignupSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   mobile: z.string().min(10, 'Mobile number must be at least 10 digits'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be less than 128 characters')
+    .superRefine((val, ctx) => {
+      const missing: string[] = [];
+      if (!/[A-Z]/.test(val)) missing.push('uppercase');
+      if (!/[a-z]/.test(val)) missing.push('lowercase');
+      if (!/\d/.test(val)) missing.push('number');
+      if (!/[@$!%*?&]/.test(val)) missing.push('special');
+      if (missing.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: buildPasswordMessage(missing),
+          path: ['password']
+        });
+      }
+    }),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -268,7 +321,6 @@ export const removeCouponSchema = z.object({
   code: z.string().min(1, 'Coupon code is required'),
 });
 
-// Enhanced payment validation schemas
 export const processPaymentSchema = z.object({
   orderId: z.string().min(1, 'Order ID is required'),
   paymentMethod: z.enum([
@@ -293,7 +345,6 @@ export const processPaymentSchema = z.object({
   savePaymentMethod: z.boolean().default(false),
 });
 
-// Checkout validation schemas
 export const checkoutCalculateSchema = z.object({
   items: z.array(z.object({
     productId: z.string().min(1),

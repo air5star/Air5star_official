@@ -11,6 +11,14 @@ const signupAttempts = new Map<string, { count: number; lastAttempt: number }>()
 const MAX_SIGNUP_ATTEMPTS = 5;
 const SIGNUP_WINDOW = 15 * 60 * 1000; // 15 minutes
 
+// Helper to join messages cleanly
+function joinWithAnd(messages: string[]): string {
+  if (messages.length === 0) return '';
+  if (messages.length === 1) return messages[0];
+  if (messages.length === 2) return `${messages[0]} and ${messages[1]}`;
+  return `${messages.slice(0, -1).join(', ')} and ${messages[messages.length - 1]}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting by IP
@@ -149,13 +157,20 @@ export async function POST(request: NextRequest) {
     console.error('Signup error:', error);
 
     if (error instanceof z.ZodError) {
+      const details = error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message
+      }));
+      const passwordMessages = details
+        .filter(d => d.field === 'password')
+        .map(d => d.message);
+      const combinedPasswordMessage = passwordMessages.length 
+        ? joinWithAnd([...new Set(passwordMessages)])
+        : undefined;
       return NextResponse.json(
         { 
-          error: 'Validation failed',
-          details: error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message
-          }))
+          error: combinedPasswordMessage || 'Validation failed',
+          details
         },
         { status: 400 }
       );

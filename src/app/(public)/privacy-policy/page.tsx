@@ -14,7 +14,7 @@ const PrivacyPolicyPage = () => {
           
           <h2 className="text-xl font-semibold mt-6 mb-3">Introduction</h2>
           <p>
-            Air5Star ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by Air5Star. This Privacy Policy applies to our website, and its associated subdomains (collectively, our "Service"). By accessing or using our Service, you signify that you have read, understood, and agree to our collection, storage, use, and disclosure of your personal information as described in this Privacy Policy.
+            Air5Star is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by Air5Star. This Privacy Policy applies to our website, and its associated subdomains (collectively, our "Service"). By accessing or using our Service, you signify that you have read, understood, and agree to our collection, storage, use, and disclosure of your personal information as described in this Privacy Policy.
           </p>
           
           <h2 className="text-xl font-semibold mt-6 mb-3">Information We Collect</h2>

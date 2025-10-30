@@ -14,7 +14,7 @@ const AboutUs = () => {
         {/* Description */}
         <p className="text-base sm:text-lg md:text-xl text-center max-w-3xl mx-auto mb-12 leading-relaxed break-words">
           Welcome to <strong>Air5Star Cooling Technology Pvt Ltd</strong>, your
-          one-stop destination for premium quality. We’re passionate about
+          one-stop destination for premium quality products. We’re passionate about
           delivering top-notch products with exceptional customer service. At
           Air5Star, we combine innovation, trust, and customer satisfaction to
           redefine your online shopping experience.

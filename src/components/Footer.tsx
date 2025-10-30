@@ -94,13 +94,25 @@ const Footer = () => {
           <div className="flex flex-col">
             <h3 className="text-gray-400 font-medium text-sm md:text-base mb-3 md:mb-4">CONNECT WITH US</h3>
             <div className="flex flex-wrap gap-3">
-              <a href="#" className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors" aria-label="Twitter">
+              <a
+                href="https://x.com/Air5starCti"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="X (Twitter)"
+              >
                 <Twitter className="h-5 w-5 text-blue-900" />
               </a>
               <a href="#" className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors" aria-label="Facebook">
                 <Facebook className="h-5 w-5 text-blue-900" />
               </a>
-              <a href="#" className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors" aria-label="YouTube">
+              <a
+                href="https://www.youtube.com/@Air5star"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="YouTube"
+              >
                 <Youtube className="h-5 w-5 text-blue-900" />
               </a>
               <a 
@@ -112,7 +124,13 @@ const Footer = () => {
               >
                 <Linkedin className="h-5 w-5 text-blue-900" />
               </a>
-              <a href="#" className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors" aria-label="Instagram">
+              <a
+                href="https://www.instagram.com/air5starcti?igsh=MWk3aGl0MzNhanBsMA=="
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Instagram"
+              >
                 <Instagram className="h-5 w-5 text-blue-900" />
               </a>
             </div>

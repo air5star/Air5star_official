@@ -51,40 +51,43 @@ export default function Home() {
           <CarouselContent>
             {bannerImages.map((image, index) => (
               <CarouselItem key={index}>
-                <div className="relative mx-auto mt-3 md:mt-5 h-[200px] sm:h-[300px] md:h-[400px] lg:h-[450px] w-full max-w-[1400px] bg-[#0a2a56] overflow-hidden rounded-lg shadow-md">
-                  <div className="h-full w-full">
-                    <Image
-                      src={activeImage ?? bannerImages[0]}
-                      alt="carousel banner"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1400px"
-                      priority
-                    />
-                  </div>
-
-                  {/* Banner Content */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 bg-black/30">
-                    <div className="flex flex-col items-center space-y-3">
-                      <Link href="/products">
-                        <Button className="bg-blue-900 hover:bg-blue-800 text-white rounded-md px-6 py-2 md:px-8 md:py-3 text-sm md:text-base font-medium transition-colors">
-                          Shop Now
-                        </Button>
-                      </Link>
-                      <ACCalculator className="text-sm md:text-base" />
+                <div className="relative mx-auto mt-3 md:mt-5 w-full max-w-[1400px] bg-[#0a2a56] overflow-hidden rounded-lg shadow-md">
+                  {/* Responsive container with aspect ratio */}
+                  <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                    <div className="absolute inset-0 flex items-center justify-center bg-[#0a2a56]">
+                      <Image
+                        src={activeImage ?? bannerImages[0]}
+                        alt="carousel banner"
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1400px"
+                        priority
+                      />
                     </div>
-                  </div>
 
-                  {/* Carousel Indicators */}
-                  <div className="absolute bottom-3 md:bottom-5 left-1/2 transform -translate-x-1/2 flex gap-2">
-                    {bannerImages.map((image, i) => (
-                      <button
-                        key={i}
-                        className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all ${i === bannerImages.indexOf(activeImage ?? bannerImages[0]) ? 'bg-white scale-125' : 'bg-white/60'}`}
-                        onClick={() => setActiveImage(bannerImages[i])}
-                        aria-label={`Go to slide ${i + 1}`}
-                      ></button>
-                    ))}
+                    {/* Banner Content - Positioned to avoid text areas */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 sm:pb-20 md:pb-24 lg:pb-28 text-white p-2 sm:p-4 bg-gradient-to-t from-black/50 via-transparent to-transparent">
+                      <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6">
+                        <Link href="/products">
+                          <Button className="bg-blue-900 hover:bg-blue-800 text-white rounded-md px-4 py-2 sm:px-6 sm:py-2 md:px-8 md:py-3 text-xs sm:text-sm md:text-base font-medium transition-colors shadow-lg">
+                            Shop Now
+                          </Button>
+                        </Link>
+                        <ACCalculator className="text-xs sm:text-sm md:text-base" />
+                      </div>
+                    </div>
+
+                    {/* Carousel Indicators */}
+                    <div className="absolute bottom-2 sm:bottom-3 md:bottom-5 left-1/2 transform -translate-x-1/2 flex gap-1.5 sm:gap-2">
+                      {bannerImages.map((image, i) => (
+                        <button
+                          key={i}
+                          className={`w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full transition-all ${i === bannerImages.indexOf(activeImage ?? bannerImages[0]) ? 'bg-white scale-125 shadow-lg' : 'bg-white/60'}`}
+                          onClick={() => setActiveImage(bannerImages[i])}
+                          aria-label={`Go to slide ${i + 1}`}
+                        ></button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CarouselItem>

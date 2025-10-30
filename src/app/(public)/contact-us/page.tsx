@@ -16,11 +16,8 @@ const ContactUs = () => {
                 <div>
                     <h2 className='text-base sm:text-lg font-medium mb-1 sm:mb-2'>Corporate Office</h2>
                     <p className="text-sm sm:text-base mb-1">Air5Star Cooling Technology India Pvt. Ltd.</p>
--                   <p className="text-sm sm:text-base mb-1">19-3-422/8, 1st floor Jahanuma,</p>
+                    <p className="text-sm sm:text-base mb-1">19-3-422/8, 1st floor Jahanuma,</p>
 <p className="text-sm sm:text-base mb-1">Hyderabad - 500053</p>
-+                   <p className="text-sm sm:text-base mb-1">19-3-422/8, 1st floor Jahanuma,</p>
-+                   <p className="text-sm sm:text-base mb-1">Hyderabad - 500053</p>
-                    <p className="text-sm sm:text-base mb-1">
                       <a href="mailto:info.air5star@gmail.com?cc=mkshvacengineer@gmail.com" className="text-blue-600 hover:underline">
                         info.air5star@gmail.com
                       </a>

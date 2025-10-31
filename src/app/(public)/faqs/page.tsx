@@ -1,5 +1,6 @@
 'use client';
 
+import { products } from '@/data';
 import React, { useState } from 'react';
 
 const faqs = [
@@ -21,7 +22,7 @@ const faqs = [
   {
     question: 'When will I receive my order?',
     answer:
-      'Most orders are delivered within 3–7 business days depending on your location. Tracking information is provided once the order is dispatched.',
+      'Domestic product orders are delivered within 3-7 Days, and commercial products and delivered within 2-4 weeks in accordance with the manufactures norms.',
   },
   {
     question: 'What payment methods are accepted?',

@@ -51,22 +51,22 @@ export default function Home() {
           <CarouselContent>
             {bannerImages.map((image, index) => (
               <CarouselItem key={index}>
-                <div className="relative mx-auto w-full h-screen bg-[#0a2a56] overflow-hidden shadow-md">
-                  {/* Full viewport banner container */}
-                  <div className="relative w-full h-full">
+                <div className="relative mx-auto w-full bg-[#0a2a56] overflow-hidden shadow-md">
+                  {/* Responsive aspect-ratio banner container */}
+                  <div className="relative w-full aspect-[3/2] sm:aspect-[16/10] md:aspect-[16/9]">
                     <div className="absolute inset-0 flex items-center justify-center bg-[#0a2a56]">
                       <Image
                         src={activeImage ?? bannerImages[0]}
                         alt="carousel banner"
                         fill
-                        className="object-cover"
+                        className="object-contain"
                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1400px"
                         priority
                       />
                     </div>
 
-                    {/* Banner Content - minimize internal padding on mobile */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-end pb-6 sm:pb-8 md:pb-12 lg:pb-16 text-white p-0 sm:p-2 md:p-4 bg-gradient-to-t from-black/40 via-transparent to-transparent">
+                    {/* Banner Content - tighter spacing to avoid clipping */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-end pb-4 sm:pb-6 md:pb-10 lg:pb-12 text-white p-1 sm:p-2 md:p-4 bg-gradient-to-t from-black/40 via-transparent to-transparent">
                       <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6">
                         <Link href="/products">
                           <Button className="bg-blue-900 hover:bg-blue-800 text-white rounded-md px-4 py-2 sm:px-6 sm:py-2 md:px-8 md:py-3 text-xs sm:text-sm md:text-base font-medium transition-colors shadow-lg">

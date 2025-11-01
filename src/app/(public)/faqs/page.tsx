@@ -17,7 +17,7 @@ const faqs = [
   {
     question: 'What is your return policy?',
     answer:
-      'We offer a 7-day return window from the date of delivery. Products must be unused, in original packaging, and include all accessories and documentation.',
+      '7-day return policy applicable to domestic products only and for all commercial products return policy depends on the production and fabrication in the factory. if product is under fabrication or production, it will not be returned.',
   },
   {
     question: 'When will I receive my order?',
